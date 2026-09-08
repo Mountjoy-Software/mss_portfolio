@@ -30,6 +30,9 @@ class CicdStack(Stack):
             self, "GithubOidc", url=GITHUB_OIDC_URL, client_ids=["sts.amazonaws.com"]
         )
 
+        owner, repo_name = github_repo.split("/")
+        sub_pattern = f"repo:{owner}*/{repo_name}*:ref:refs/heads/main"
+
         self.role = iam.Role(
             self,
             "DeployRole",
@@ -41,8 +44,12 @@ class CicdStack(Stack):
                 conditions={
                     "StringEquals": {
                         "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
-                        "token.actions.githubusercontent.com:sub": f"repo:{github_repo}:ref:refs/heads/main",
-                    }
+                        "token.actions.githubusercontent.com:repository": github_repo,
+                        "token.actions.githubusercontent.com:ref": "refs/heads/main",
+                    },
+                    "StringLike": {
+                        "token.actions.githubusercontent.com:sub": sub_pattern,
+                    },
                 },
                 assume_role_action="sts:AssumeRoleWithWebIdentity",
             ),

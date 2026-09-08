@@ -70,6 +70,14 @@ distribution-wide and would turn API 404s into `index.html` with a 200. The
 Flutter web does not content-hash `main.dart.js`. Publish everything with
 `max-age=0, must-revalidate` and invalidate on deploy.
 
+GitHub issues immutable-identifier OIDC subs on this account, so the claim looks like
+`repo:Mountjoy-Software@326559192/mss_portfolio@1361615689:ref:refs/heads/main`, not the
+documented `repo:owner/name:ref:...`. The scoping in `stacks/cicd.py` therefore comes
+from exact `repository` and `ref` conditions, with a wildcard `sub` alongside them
+because IAM refuses a GitHub OIDC trust policy that does not constrain `sub` or
+`job_workflow_ref`. To see the real claims, fetch a token in a workflow step with
+`ACTIONS_ID_TOKEN_REQUEST_URL` and decode the payload.
+
 boto3 cannot read `aws login` credentials without `botocore[crt]` and fails at request
 time, not import. It lives in `requirements-dev.txt` only; Fargate uses the task role.
 
