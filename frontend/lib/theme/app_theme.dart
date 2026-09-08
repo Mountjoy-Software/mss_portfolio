@@ -1,63 +1,87 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-const _seed = Color(0xFF2D6A5A);
+const primaryOrange = Color(0xFFE65C20);
+const _lightScaffold = Color(0xFFF7EBEA);
+const _lightSurface = Color(0xFFFFFFFF);
+const _lightOnSurface = Color(0xFF1C1917);
+const _darkScaffold = Color(0xFF000000);
+const _darkSurface = Color(0xFF2D1A18);
+const _darkOnSurface = Color(0xFFF6E2DF);
 
-ThemeData _base(Brightness brightness) {
-  final scheme = ColorScheme.fromSeed(seedColor: _seed, brightness: brightness);
-  final textTheme = GoogleFonts.interTextTheme(
-    ThemeData(brightness: brightness).textTheme,
-  );
+TextTheme _mono(TextTheme base) => GoogleFonts.jetBrainsMonoTextTheme(base);
 
-  return ThemeData(
-    useMaterial3: true,
-    colorScheme: scheme,
-    scaffoldBackgroundColor: scheme.surface,
-    textTheme: textTheme.copyWith(
-      displaySmall: textTheme.displaySmall?.copyWith(
-        fontWeight: FontWeight.w700,
-        letterSpacing: -1,
+ThemeData get lightTheme => ThemeData(
+  useMaterial3: true,
+  textTheme: _mono(ThemeData.light().textTheme),
+  scaffoldBackgroundColor: _lightScaffold,
+  appBarTheme: const AppBarTheme(
+    centerTitle: false,
+    backgroundColor: _lightScaffold,
+    foregroundColor: _lightOnSurface,
+    elevation: 0,
+    scrolledUnderElevation: 0,
+    shadowColor: Colors.transparent,
+    surfaceTintColor: Colors.transparent,
+    systemOverlayStyle: SystemUiOverlayStyle.dark,
+  ),
+  colorScheme:
+      ColorScheme.fromSeed(
+        seedColor: primaryOrange,
+        brightness: Brightness.light,
+      ).copyWith(
+        primary: primaryOrange,
+        onPrimary: Colors.white,
+        secondary: const Color(0xFFB45309),
+        onSecondary: Colors.white,
+        tertiary: const Color(0xFF3F6212),
+        onTertiary: Colors.white,
+        error: const Color(0xFFDC2626),
+        onError: Colors.white,
+        surface: _lightSurface,
+        surfaceContainerLowest: _lightSurface,
+        surfaceContainerLow: _lightSurface,
+        surfaceContainer: _lightSurface,
+        surfaceContainerHigh: const Color(0xFFF1E7E4),
+        surfaceContainerHighest: const Color(0xFFF1E7E4),
+        onSurface: _lightOnSurface,
       ),
-      headlineMedium: textTheme.headlineMedium?.copyWith(
-        fontWeight: FontWeight.w600,
-        letterSpacing: -0.5,
-      ),
-      titleLarge: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
-    ),
-    cardTheme: CardThemeData(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: scheme.outlineVariant),
-      ),
-      clipBehavior: Clip.antiAlias,
-    ),
-    chipTheme: ChipThemeData(
-      side: BorderSide(color: scheme.outlineVariant),
-      labelStyle: textTheme.labelMedium,
-    ),
-    appBarTheme: AppBarTheme(
-      backgroundColor: scheme.surface,
-      surfaceTintColor: Colors.transparent,
-      centerTitle: false,
-      elevation: 0,
-      scrolledUnderElevation: 1,
-    ),
-    inputDecorationTheme: InputDecorationThemeData(
-      filled: true,
-      fillColor: scheme.surfaceContainerHighest,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
-      ),
-    ),
-  );
-}
+);
 
-final lightTheme = _base(Brightness.light);
-final darkTheme = _base(Brightness.dark);
-
-class Insets {
-  static const page = EdgeInsets.symmetric(horizontal: 24, vertical: 32);
-  static const maxContentWidth = 1080.0;
-}
+ThemeData get darkTheme => ThemeData(
+  useMaterial3: true,
+  textTheme: _mono(ThemeData.dark().textTheme),
+  scaffoldBackgroundColor: _darkScaffold,
+  appBarTheme: const AppBarTheme(
+    centerTitle: false,
+    backgroundColor: _darkScaffold,
+    foregroundColor: _darkOnSurface,
+    elevation: 0,
+    scrolledUnderElevation: 0,
+    shadowColor: Colors.transparent,
+    surfaceTintColor: Colors.transparent,
+    systemOverlayStyle: SystemUiOverlayStyle.light,
+  ),
+  colorScheme:
+      ColorScheme.fromSeed(
+        seedColor: primaryOrange,
+        brightness: Brightness.dark,
+      ).copyWith(
+        primary: primaryOrange,
+        onPrimary: Colors.white,
+        secondary: const Color(0xFFF0A868),
+        onSecondary: Colors.black,
+        tertiary: const Color(0xFF9BCB5A),
+        onTertiary: Colors.black,
+        error: const Color(0xFFF87171),
+        onError: Colors.black,
+        surface: _darkSurface,
+        surfaceContainerLowest: _darkSurface,
+        surfaceContainerLow: _darkSurface,
+        surfaceContainer: _darkSurface,
+        surfaceContainerHigh: const Color(0xFF3A2320),
+        surfaceContainerHighest: const Color(0xFF3A2320),
+        onSurface: _darkOnSurface,
+      ),
+);

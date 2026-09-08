@@ -10,9 +10,12 @@ from src.config import settings
 
 @cache
 def table():
-    return boto3.resource("dynamodb", region_name=settings.AWS_REGION).Table(
-        settings.DDB_TABLE
+    resource = boto3.resource(
+        "dynamodb",
+        region_name=settings.AWS_REGION,
+        endpoint_url=settings.DDB_ENDPOINT or None,
     )
+    return resource.Table(settings.DDB_TABLE)
 
 
 def _visitor_key(ip: str) -> str:

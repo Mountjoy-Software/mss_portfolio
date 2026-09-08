@@ -1,10 +1,18 @@
 import json
+import logging
 from typing import AsyncIterator
 
-from anthropic import AsyncAnthropic
+from anthropic import (
+    APIConnectionError,
+    APIStatusError,
+    AsyncAnthropic,
+    RateLimitError,
+)
 
 from src.config import settings
 from src.content import profile
+
+log = logging.getLogger(__name__)
 
 _client: AsyncAnthropic | None = None
 
@@ -95,6 +103,21 @@ def _sse(event: str, **data) -> str:
 
 
 async def stream_reply(history: list[dict]) -> AsyncIterator[str]:
+    try:
+        async for frame in _stream_turns(history):
+            yield frame
+    except RateLimitError:
+        log.warning("anthropic rate limited the chat request")
+        yield _sse("error", message="The assistant is busy. Try again shortly.")
+    except (APIStatusError, APIConnectionError):
+        log.exception("anthropic request failed")
+        yield _sse("error", message="The assistant is unavailable right now.")
+    except Exception:
+        log.exception("chat stream failed")
+        yield _sse("error", message="Something went wrong answering that.")
+
+
+async def _stream_turns(history: list[dict]) -> AsyncIterator[str]:
     messages = list(history)
 
     while True:

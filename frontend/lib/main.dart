@@ -17,6 +17,7 @@ class PortfolioApp extends StatelessWidget {
       title: 'Mountjoy Software Solutions',
       theme: lightTheme,
       darkTheme: darkTheme,
+      themeMode: ThemeMode.system,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
     );

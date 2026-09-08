@@ -53,8 +53,7 @@ class ChatController extends Notifier<ChatState> {
     );
 
     try {
-      final stream = ref.read(apiClientProvider).streamChat(history);
-      await for (final event in stream) {
+      await for (final event in ref.read(apiClientProvider).streamChat(history)) {
         switch (event.kind) {
           case ChatEventKind.token:
             pending.content += event.text;
@@ -68,8 +67,8 @@ class ChatController extends Notifier<ChatState> {
             state = state.copyWith(turns: [...state.turns], clearTool: true);
         }
       }
-    } catch (error) {
-      pending.content = 'The assistant could not be reached.';
+    } catch (_) {
+      pending.content = 'Could not reach the assistant.';
       state = state.copyWith(turns: [...state.turns]);
     } finally {
       state = state.copyWith(streaming: false, clearTool: true);

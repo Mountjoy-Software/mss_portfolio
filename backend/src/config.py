@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     CHAT_MAX_TOKENS: int = 8000
 
     DDB_TABLE: str = "mss-portfolio"
+    DDB_ENDPOINT: str = ""
     AWS_REGION: str = "us-east-1"
 
     CHAT_RATE_LIMIT: int = 20
