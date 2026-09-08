@@ -3,13 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_client.dart';
 import '../../core/backdrop.dart';
+import '../../core/preferences.dart';
 import 'chat_controller.dart';
 import 'commands.dart';
 import 'prompt_bar.dart';
 import 'transcript.dart';
 
 const _business = 'Mountjoy Software Solutions';
+const _name = 'Ross Mountjoy';
 const _tagline = 'Software development consulting';
+const _columnWidth = 880.0;
 
 class TerminalPage extends ConsumerStatefulWidget {
   const TerminalPage({super.key});
@@ -32,17 +35,52 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
   }
 
   void _send(String text) {
-    _input.clear();
-    _focus.requestFocus();
     final trimmed = text.trim();
     if (trimmed.isEmpty) return;
+    _input.clear();
+    _focus.requestFocus();
     if (trimmed.startsWith('/')) {
       ref
           .read(chatControllerProvider.notifier)
-          .runCommand(trimmed, runSlashCommand(trimmed));
+          .runCommand(trimmed, _replyFor(trimmed));
       return;
     }
     ref.read(chatControllerProvider.notifier).send(text);
+  }
+
+  String _replyFor(String input) {
+    final token = commandToken(input);
+    if (token == '/help') return helpReply();
+    if (token == '/set-theme') return _applyTheme(commandArgument(input));
+
+    final profile = ref.read(profileProvider).value;
+    if (profile == null) {
+      return 'Still loading that data. Try again in a moment.';
+    }
+    return switch (token) {
+      '/projects' => projectsReply(profile),
+      '/experience' => experienceReply(profile),
+      '/skills' => skillsReply(profile),
+      '/contact' => contactReply(profile),
+      _ =>
+        'Unknown command `$token`. Type `/help` to see what is available.',
+    };
+  }
+
+  String _applyTheme(String argument) {
+    final mode = switch (argument) {
+      'dark' => ThemeMode.dark,
+      'light' => ThemeMode.light,
+      'system' => ThemeMode.system,
+      _ => null,
+    };
+    if (mode == null) {
+      return 'Usage: `/set-theme dark | light | system`';
+    }
+    ref.read(themeModeProvider.notifier).set(mode);
+    return mode == ThemeMode.system
+        ? 'Theme now follows your system setting, and will keep doing so on reload.'
+        : 'Theme set to $argument. It will stay that way across reloads.';
   }
 
   void _stickToEnd() {
@@ -67,6 +105,7 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
         state.streaming &&
         state.turns.isNotEmpty &&
         state.turns.last.content.isEmpty;
+    final showBackdrop = state.turns.isEmpty || awaiting;
 
     return Scaffold(
       body: SafeArea(
@@ -75,38 +114,56 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
             Expanded(
               child: Stack(
                 children: [
-                  if (state.turns.isEmpty || awaiting)
+                  if (showBackdrop)
                     const Positioned.fill(
                       child: IgnorePointer(child: GlowVignette()),
                     ),
-                  if (state.turns.isEmpty || awaiting)
+                  if (showBackdrop)
                     const Positioned.fill(
                       child: IgnorePointer(child: ConstellationField()),
                     ),
                   Positioned.fill(
-                    child: state.turns.isEmpty
-                        ? const _Hero()
-                        : _Body(scroll: _scroll, state: state),
+                    child: _Column(
+                      child: state.turns.isEmpty
+                          ? const _Hero()
+                          : _Transcript(scroll: _scroll, state: state),
+                    ),
                   ),
                 ],
               ),
             ),
-            Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 880),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                  child: PromptBar(
-                    controller: _input,
-                    focusNode: _focus,
-                    streaming: state.streaming,
-                    usage: state.usage,
-                    onSubmit: _send,
-                  ),
+            _Column(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: PromptBar(
+                  controller: _input,
+                  focusNode: _focus,
+                  streaming: state.streaming,
+                  usage: state.usage,
+                  onSubmit: _send,
                 ),
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Column extends StatelessWidget {
+  const _Column({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: _columnWidth),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: child,
         ),
       ),
     );
@@ -123,59 +180,60 @@ class _Hero extends ConsumerWidget {
     final profile = ref.watch(profileProvider).value;
 
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Image.asset('assets/logo/mss_logo.png', height: 96),
-            const SizedBox(height: 24),
-            Text(
-              profile?.business ?? _business,
-              textAlign: TextAlign.center,
-              style: textTheme.titleLarge?.copyWith(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: colorScheme.onSurface,
-              ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Image.asset('assets/logo/mss_logo.png', height: 96),
+          const SizedBox(height: 24),
+          Text(
+            profile?.business ?? _business,
+            textAlign: TextAlign.center,
+            style: textTheme.titleLarge?.copyWith(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: colorScheme.onSurface,
             ),
-            const SizedBox(height: 8),
-            Text(
-              profile?.tagline ?? _tagline,
-              textAlign: TextAlign.center,
-              style: textTheme.bodyMedium?.copyWith(
-                fontSize: 15,
-                color: colorScheme.onSurfaceVariant,
-              ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            profile?.name ?? _name,
+            textAlign: TextAlign.center,
+            style: textTheme.bodyMedium?.copyWith(
+              fontSize: 15,
+              color: colorScheme.primary,
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            profile?.tagline ?? _tagline,
+            textAlign: TextAlign.center,
+            style: textTheme.bodyMedium?.copyWith(
+              fontSize: 14,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _Body extends StatelessWidget {
-  const _Body({required this.scroll, required this.state});
+class _Transcript extends StatelessWidget {
+  const _Transcript({required this.scroll, required this.state});
 
   final ScrollController scroll;
   final ChatState state;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 880),
-        child: ListView.builder(
-          controller: scroll,
-          padding: const EdgeInsets.fromLTRB(20, 28, 20, 8),
-          itemCount: state.turns.length,
-          itemBuilder: (context, i) => TranscriptEntry(
-            turn: state.turns[i],
-            isStreaming: state.streaming && i == state.turns.length - 1,
-            toolActivity: state.toolActivity,
-          ),
-        ),
+    return ListView.builder(
+      controller: scroll,
+      padding: const EdgeInsets.only(top: 28, bottom: 8),
+      itemCount: state.turns.length,
+      itemBuilder: (context, i) => TranscriptEntry(
+        turn: state.turns[i],
+        isStreaming: state.streaming && i == state.turns.length - 1,
+        toolActivity: state.toolActivity,
       ),
     );
   }
