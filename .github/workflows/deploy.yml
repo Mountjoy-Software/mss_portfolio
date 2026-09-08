@@ -56,6 +56,19 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Show the OIDC claims
+        run: |
+          token=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com" | jq -r .value)
+          python3 - "$token" <<'PY'
+          import base64, json, sys
+          payload = sys.argv[1].split('.')[1]
+          payload += '=' * (-len(payload) % 4)
+          claims = json.loads(base64.urlsafe_b64decode(payload))
+          for key in ('sub', 'aud', 'repository', 'repository_owner', 'ref', 'event_name'):
+              print(f"{key} = {claims.get(key)!r}")
+          PY
+
       - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ env.DEPLOY_ROLE }}
