@@ -15,13 +15,38 @@
   <meta name="twitter:card" content="summary">
 
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Mountjoy Software">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
   <link rel="icon" type="image/png" href="favicon.png"/>
   <link rel="manifest" href="manifest.json">
 
   <title>Mountjoy Software Solutions</title>
+
+  <meta name="theme-color" content="#F7EBEA" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: #F7EBEA;
+    }
+    @media (prefers-color-scheme: dark) {
+      html, body { background-color: #000000; }
+    }
+  </style>
+  <script>
+    (function () {
+      try {
+        var stored = window.localStorage.getItem('mss.theme_mode');
+        if (stored !== 'light' && stored !== 'dark') return;
+        var colour = stored === 'dark' ? '#000000' : '#F7EBEA';
+        document.documentElement.style.backgroundColor = colour;
+        var override = document.createElement('style');
+        override.textContent = 'html,body{background-color:' + colour + ' !important}';
+        document.head.appendChild(override);
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>

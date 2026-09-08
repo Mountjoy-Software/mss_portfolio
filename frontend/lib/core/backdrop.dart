@@ -96,23 +96,43 @@ class _ConstellationFieldState extends State<ConstellationField>
     super.dispose();
   }
 
-  void _seed(Size size) {
+  _Node _randomNode(Size size) => _Node(
+    x: _random.nextDouble() * size.width,
+    y: _random.nextDouble() * size.height,
+    vx: (_random.nextDouble() - 0.5) * _driftSpeed,
+    vy: (_random.nextDouble() - 0.5) * _driftSpeed,
+    r: 1 + _random.nextDouble() * 1.4,
+  );
+
+  void _resize(Size size) {
+    final previous = _size;
     _size = size;
-    _nodes.clear();
-    final count = max(
+    final target = max(
       _minNodes,
       (size.width * size.height / _areaPerNode).round(),
     );
-    for (var i = 0; i < count; i++) {
-      _nodes.add(
-        _Node(
-          x: _random.nextDouble() * size.width,
-          y: _random.nextDouble() * size.height,
-          vx: (_random.nextDouble() - 0.5) * _driftSpeed,
-          vy: (_random.nextDouble() - 0.5) * _driftSpeed,
-          r: 1 + _random.nextDouble() * 1.4,
-        ),
-      );
+
+    if (_nodes.isEmpty) {
+      for (var i = 0; i < target; i++) {
+        _nodes.add(_randomNode(size));
+      }
+      return;
+    }
+
+    if (previous.width > 0 && previous.height > 0) {
+      final scaleX = size.width / previous.width;
+      final scaleY = size.height / previous.height;
+      for (final node in _nodes) {
+        node.x *= scaleX;
+        node.y *= scaleY;
+      }
+    }
+
+    while (_nodes.length > target) {
+      _nodes.removeLast();
+    }
+    while (_nodes.length < target) {
+      _nodes.add(_randomNode(size));
     }
   }
 
@@ -135,7 +155,7 @@ class _ConstellationFieldState extends State<ConstellationField>
     return LayoutBuilder(
       builder: (context, constraints) {
         final size = constraints.biggest;
-        if (size.isFinite && size != _size) _seed(size);
+        if (size.isFinite && size != _size) _resize(size);
         return CustomPaint(
           size: size,
           painter: _ConstellationPainter(
