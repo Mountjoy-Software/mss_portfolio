@@ -1,27 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/preferences.dart';
 import 'core/router.dart';
 import 'theme/app_theme.dart';
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  SharedPreferences? preferences;
-  try {
-    preferences = await SharedPreferences.getInstance();
-  } catch (error) {
-    debugPrint('preferences unavailable, theme will not persist: $error');
-  }
-
-  runApp(
-    ProviderScope(
-      overrides: [preferencesProvider.overrideWithValue(preferences)],
-      child: const PortfolioApp(),
-    ),
-  );
+void main() {
+  runApp(const ProviderScope(child: PortfolioApp()));
 }
 
 class PortfolioApp extends ConsumerWidget {

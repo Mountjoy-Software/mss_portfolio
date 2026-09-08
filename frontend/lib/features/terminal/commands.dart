@@ -16,6 +16,7 @@ const slashCommands = [
   SlashCommand('/experience', 'Where he has worked and what shipped'),
   SlashCommand('/skills', 'Languages, frameworks and infrastructure'),
   SlashCommand('/contact', 'How to get in touch'),
+  SlashCommand('/clear', 'Clear the transcript and start over'),
   SlashCommand(
     '/set-theme',
     'Switch between dark, light and system',

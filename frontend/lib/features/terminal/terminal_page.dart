@@ -40,9 +40,12 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
     _input.clear();
     _focus.requestFocus();
     if (trimmed.startsWith('/')) {
-      ref
-          .read(chatControllerProvider.notifier)
-          .runCommand(trimmed, _replyFor(trimmed));
+      final controller = ref.read(chatControllerProvider.notifier);
+      if (commandToken(trimmed) == '/clear') {
+        controller.reset();
+        return;
+      }
+      controller.runCommand(trimmed, _replyFor(trimmed));
       return;
     }
     ref.read(chatControllerProvider.notifier).send(text);
@@ -77,10 +80,13 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
     if (mode == null) {
       return 'Usage: `/set-theme dark | light | system`';
     }
-    ref.read(themeModeProvider.notifier).set(mode);
-    return mode == ThemeMode.system
-        ? 'Theme now follows your system setting, and will keep doing so on reload.'
-        : 'Theme set to $argument. It will stay that way across reloads.';
+    final saved = ref.read(themeModeProvider.notifier).set(mode);
+    final what = mode == ThemeMode.system
+        ? 'Theme now follows your system setting'
+        : 'Theme set to $argument';
+    return saved
+        ? '$what, and it will stay that way across reloads.'
+        : '$what for this visit only. Your browser is blocking local storage, so it will reset on reload.';
   }
 
   void _stickToEnd() {

@@ -1,10 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:web/web.dart' as web;
 
-final preferencesProvider = Provider<SharedPreferences?>((ref) => null);
+const _themeKey = 'mss.theme_mode';
 
-const _themeKey = 'theme_mode';
+String? readSetting(String key) {
+  try {
+    return web.window.localStorage.getItem(key);
+  } catch (_) {
+    return null;
+  }
+}
+
+bool writeSetting(String key, String value) {
+  try {
+    web.window.localStorage.setItem(key, value);
+    return web.window.localStorage.getItem(key) == value;
+  } catch (_) {
+    return false;
+  }
+}
 
 ThemeMode _parse(String? name) => switch (name) {
   'dark' => ThemeMode.dark,
@@ -14,14 +29,11 @@ ThemeMode _parse(String? name) => switch (name) {
 
 class ThemeModeController extends Notifier<ThemeMode> {
   @override
-  ThemeMode build() =>
-      _parse(ref.read(preferencesProvider)?.getString(_themeKey));
+  ThemeMode build() => _parse(readSetting(_themeKey));
 
-  Future<void> set(ThemeMode mode) async {
+  bool set(ThemeMode mode) {
     state = mode;
-    try {
-      await ref.read(preferencesProvider)?.setString(_themeKey, mode.name);
-    } catch (_) {}
+    return writeSetting(_themeKey, mode.name);
   }
 }
 
