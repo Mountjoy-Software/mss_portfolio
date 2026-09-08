@@ -1,0 +1,44 @@
+{
+  "name": "Ross Mountjoy",
+  "business": "Mountjoy Software Solutions",
+  "tagline": "Software development consulting",
+  "location": "TODO",
+  "email": "ross.mountjoy.carr@pm.me",
+  "summary": "TODO",
+  "skills": {
+    "languages": ["Python", "Dart", "SQL", "JavaScript"],
+    "backend": ["FastAPI", "SQLAlchemy", "Alembic", "Pydantic"],
+    "frontend": ["Flutter", "Riverpod", "go_router"],
+    "infrastructure": ["AWS ECS Fargate", "AWS CDK", "CloudFront", "DynamoDB", "Docker", "GitHub Actions"],
+    "llm": ["Anthropic Claude API", "streaming", "tool use", "prompt caching", "RAG", "vector search"]
+  },
+  "experience": [
+    {
+      "company": "TODO",
+      "role": "TODO",
+      "start": "YYYY-MM",
+      "end": "present",
+      "highlights": ["TODO"],
+      "stack": ["TODO"]
+    }
+  ],
+  "projects": [
+    {
+      "slug": "gem",
+      "name": "Gem",
+      "blurb": "Self-hosted AI assistant. FastAPI backend, Flutter client on web, iOS and Android, and a voice console with a locally trained wake word.",
+      "details": "Routes chat across two Ollama instances and the Anthropic API depending on the job. Qdrant backs memory and knowledge retrieval, chat streams NDJSON, and it ingests calendar and news feeds on a schedule. Also handles push notifications, speaker identification and transcription.",
+      "stack": ["FastAPI", "Flutter", "SQLAlchemy", "Qdrant", "Anthropic API", "Ollama", "Docker"],
+      "public": false
+    },
+    {
+      "slug": "mss-portfolio",
+      "name": "This site",
+      "blurb": "Flutter web on S3 and CloudFront, FastAPI on ECS Fargate, all defined in CDK and shipped by GitHub Actions.",
+      "details": "Single-table DynamoDB for rate limiting, OIDC deploys with no stored AWS keys, and a Claude-backed assistant that answers questions about this work history. Source is public.",
+      "stack": ["Flutter", "FastAPI", "AWS CDK", "ECS Fargate", "CloudFront", "DynamoDB", "GitHub Actions"],
+      "public": true,
+      "repo": "https://github.com/Mountjoy-Software/mss_portfolio"
+    }
+  ]
+}

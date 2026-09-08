@@ -1,0 +1,31 @@
+{
+  "app": "python3 app.py",
+  "watch": {
+    "include": [
+      "**"
+    ],
+    "exclude": [
+      "README.md",
+      "cdk*.json",
+      "requirements*.txt",
+      "**/__pycache__",
+      ".venv"
+    ]
+  },
+  "context": {
+    "account": "292341339155",
+    "region": "us-east-1",
+    "domain": "mountjoy.io",
+    "api_subdomain": "api.mountjoy.io",
+    "github_repo": "Mountjoy-Software/mss_portfolio",
+    "cloudfront_origin_prefix_list": "pl-3b927c52",
+    "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
+    "@aws-cdk/core:checkSecretUsage": true,
+    "@aws-cdk/aws-iam:minimizePolicies": true,
+    "@aws-cdk/core:validateSnapshotRemovalPolicy": true,
+    "@aws-cdk/aws-ecs:disableEcsImdsBlocking": true,
+    "@aws-cdk/core:newStyleStackSynthesis": true,
+    "hosted_zone_id": "Z07534794LLNY7VDF3XN",
+    "@aws-cdk/core:defaultCrossStackReferences": "both"
+  }
+}

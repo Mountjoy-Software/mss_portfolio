@@ -1,0 +1,157 @@
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  DEPLOY_ROLE: arn:aws:iam::292341339155:role/mss-portfolio-github-deploy
+  ECR_REPOSITORY: mss-portfolio-backend
+  FLUTTER_VERSION: 3.44.0
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: pip install -r requirements.txt
+
+      - name: Import the app
+        working-directory: backend
+        run: python -c "from src.main import app"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Analyse the frontend
+        working-directory: frontend
+        run: |
+          flutter pub get
+          flutter analyze
+          flutter test
+
+  deploy:
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - name: Install CDK dependencies
+        working-directory: infra
+        run: pip install -r requirements.txt
+
+      - name: Deploy the registry and table
+        working-directory: infra
+        run: |
+          npx --yes aws-cdk@2.1140.0 deploy MssPortfolioData \
+            --require-approval never
+
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: ecr
+
+      - name: Build and push the API image
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+        run: |
+          IMAGE="$REGISTRY/$ECR_REPOSITORY:${{ github.sha }}"
+          docker build \
+            --build-arg APP_VERSION=${{ github.sha }} \
+            --tag "$IMAGE" backend
+          docker push "$IMAGE"
+
+      - name: Deploy the remaining infrastructure
+        working-directory: infra
+        run: |
+          npx --yes aws-cdk@2.1140.0 deploy --all \
+            --require-approval never \
+            --concurrency 2 \
+            -c image_tag=${{ github.sha }}
+
+      - name: Read the stack outputs
+        id: outputs
+        run: |
+          site_stack=$(aws cloudformation describe-stacks \
+            --stack-name MssPortfolioSite \
+            --query 'Stacks[0].Outputs' --output json)
+          echo "bucket=$(echo "$site_stack" | jq -r '.[]|select(.OutputKey=="SiteBucketName")|.OutputValue')" >> "$GITHUB_OUTPUT"
+          echo "distribution=$(echo "$site_stack" | jq -r '.[]|select(.OutputKey=="DistributionId")|.OutputValue')" >> "$GITHUB_OUTPUT"
+          echo "site_url=$(echo "$site_stack" | jq -r '.[]|select(.OutputKey=="SiteUrl")|.OutputValue')" >> "$GITHUB_OUTPUT"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Build the web bundle
+        working-directory: frontend
+        run: |
+          flutter pub get
+          flutter build web --release
+
+      - name: Publish the web bundle
+        run: |
+          aws s3 sync frontend/build/web "s3://${{ steps.outputs.outputs.bucket }}" \
+            --delete \
+            --cache-control "public, max-age=0, must-revalidate"
+
+      - name: Invalidate the edge cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${{ steps.outputs.outputs.distribution }}" \
+            --paths '/*'
+
+      - name: Smoke test
+        env:
+          SITE: ${{ steps.outputs.outputs.site_url }}
+        run: |
+          healthy=
+          for i in $(seq 1 20); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$SITE/api/v1/health" || true)
+            if [ "$code" = "200" ]; then healthy=1; break; fi
+            echo "health attempt $i: $code"; sleep 15
+          done
+          [ -n "$healthy" ] || { echo "API never became healthy"; exit 1; }
+          echo "API healthy"
+
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$SITE/api/v1/projects/nope" || true)
+          [ "$code" = "404" ] || { echo "expected 404 from the API, got $code"; exit 1; }
+          echo "API errors are not being rewritten"
+
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 \
+            "https://api.mountjoy.io/api/v1/health" || true)
+          [ "$code" = "000" ] || { echo "the load balancer answered directly on $code, CDN can be bypassed"; exit 1; }
+          echo "origin is not reachable directly"
