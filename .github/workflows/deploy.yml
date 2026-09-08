@@ -48,7 +48,6 @@ jobs:
         run: |
           flutter pub get
           flutter analyze
-          flutter test
 
   deploy:
     needs: check

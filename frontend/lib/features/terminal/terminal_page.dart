@@ -2,17 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_client.dart';
-import '../../core/models.dart';
+import '../../core/backdrop.dart';
 import 'chat_controller.dart';
+import 'commands.dart';
 import 'prompt_bar.dart';
 import 'transcript.dart';
 
-const _suggestions = [
-  'what has ross built with aws?',
-  'tell me about gem',
-  'does he have experience with llm applications?',
-  'how is this site deployed?',
-];
+const _business = 'Mountjoy Software Solutions';
+const _tagline = 'Software development consulting';
 
 class TerminalPage extends ConsumerStatefulWidget {
   const TerminalPage({super.key});
@@ -37,6 +34,14 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
   void _send(String text) {
     _input.clear();
     _focus.requestFocus();
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return;
+    if (trimmed.startsWith('/')) {
+      ref
+          .read(chatControllerProvider.notifier)
+          .runCommand(trimmed, runSlashCommand(trimmed));
+      return;
+    }
     ref.read(chatControllerProvider.notifier).send(text);
   }
 
@@ -54,203 +59,121 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
       final tokenArrived =
           next.turns.isNotEmpty &&
           previous?.turns.isNotEmpty == true &&
-          next.turns.last.content.length !=
-              previous!.turns.last.content.length;
+          next.turns.last.content.length != previous!.turns.last.content.length;
       if (grew || tokenArrived) _stickToEnd();
     });
     final state = ref.watch(chatControllerProvider);
+    final awaiting =
+        state.streaming &&
+        state.turns.isNotEmpty &&
+        state.turns.last.content.isEmpty;
 
     return Scaffold(
       body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 880),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
+        child: Column(
+          children: [
+            Expanded(
+              child: Stack(
                 children: [
-                  const _Header(),
-                  Expanded(
-                    child: state.turns.isEmpty
-                        ? _Banner(onPick: _send)
-                        : ListView.builder(
-                            controller: _scroll,
-                            padding: const EdgeInsets.only(top: 20, bottom: 8),
-                            itemCount: state.turns.length,
-                            itemBuilder: (context, i) => TranscriptEntry(
-                              turn: state.turns[i],
-                              isStreaming:
-                                  state.streaming &&
-                                  i == state.turns.length - 1,
-                              toolActivity: state.toolActivity,
-                            ),
-                          ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: PromptBar(
-                      controller: _input,
-                      focusNode: _focus,
-                      streaming: state.streaming,
-                      onSubmit: _send,
+                  if (state.turns.isEmpty || awaiting)
+                    const Positioned.fill(
+                      child: IgnorePointer(child: GlowVignette()),
                     ),
+                  if (state.turns.isEmpty || awaiting)
+                    const Positioned.fill(
+                      child: IgnorePointer(child: ConstellationField()),
+                    ),
+                  Positioned.fill(
+                    child: state.turns.isEmpty
+                        ? const _Hero()
+                        : _Body(scroll: _scroll, state: state),
                   ),
                 ],
               ),
             ),
-          ),
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 880),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                  child: PromptBar(
+                    controller: _input,
+                    focusNode: _focus,
+                    streaming: state.streaming,
+                    usage: state.usage,
+                    onSubmit: _send,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _Header extends ConsumerWidget {
-  const _Header();
+class _Hero extends ConsumerWidget {
+  const _Hero();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final usage = ref.watch(chatControllerProvider).usage;
+    final profile = ref.watch(profileProvider).value;
 
-    return Padding(
-      padding: const EdgeInsets.only(top: 16, bottom: 12),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Image.asset('assets/logo/mss_logo.png', height: 26),
-              const SizedBox(width: 10),
-              Text(
-                'mountjoy.io',
-                style: textTheme.bodyMedium?.copyWith(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: colorScheme.onSurface,
-                ),
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset('assets/logo/mss_logo.png', height: 96),
+            const SizedBox(height: 24),
+            Text(
+              profile?.business ?? _business,
+              textAlign: TextAlign.center,
+              style: textTheme.titleLarge?.copyWith(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: colorScheme.onSurface,
               ),
-              const Spacer(),
-              if (usage != null)
-                Text(
-                  '${usage['cache_read']} cached / ${usage['output_tokens']} out',
-                  style: textTheme.bodySmall?.copyWith(
-                    fontSize: 11,
-                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Divider(height: 1, color: colorScheme.outlineVariant),
-        ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              profile?.tagline ?? _tagline,
+              textAlign: TextAlign.center,
+              style: textTheme.bodyMedium?.copyWith(
+                fontSize: 15,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _Banner extends ConsumerWidget {
-  const _Banner({required this.onPick});
+class _Body extends StatelessWidget {
+  const _Body({required this.scroll, required this.state});
 
-  final ValueChanged<String> onPick;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-    final profile = ref.watch(profileProvider);
-
-    final mono = textTheme.bodyMedium?.copyWith(fontSize: 15, height: 1.65);
-    final muted = mono?.copyWith(color: colorScheme.onSurfaceVariant);
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.only(top: 28, bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          profile.when(
-            loading: () => Text('connecting...', style: muted),
-            error: (_, _) => Text(
-              'the api is unreachable. the assistant will not answer.',
-              style: mono?.copyWith(color: colorScheme.error),
-            ),
-            data: (Profile data) => Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  data.business,
-                  style: mono?.copyWith(
-                    color: colorScheme.primary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                Text(data.tagline, style: muted),
-                const SizedBox(height: 14),
-                Text(data.email, style: muted),
-              ],
-            ),
-          ),
-          const SizedBox(height: 30),
-          Text('try:', style: muted),
-          const SizedBox(height: 8),
-          for (final suggestion in _suggestions)
-            _SuggestionLine(text: suggestion, onTap: () => onPick(suggestion)),
-        ],
-      ),
-    );
-  }
-}
-
-class _SuggestionLine extends StatefulWidget {
-  const _SuggestionLine({required this.text, required this.onTap});
-
-  final String text;
-  final VoidCallback onTap;
-
-  @override
-  State<_SuggestionLine> createState() => _SuggestionLineState();
-}
-
-class _SuggestionLineState extends State<_SuggestionLine> {
-  bool _hovered = false;
+  final ScrollController scroll;
+  final ChatState state;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 3),
-          child: Row(
-            children: [
-              Text(
-                '  ${_hovered ? '>' : ' '} ',
-                style: textTheme.bodyMedium?.copyWith(
-                  fontSize: 15,
-                  height: 1.65,
-                  color: colorScheme.primary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              Expanded(
-                child: Text(
-                  widget.text,
-                  style: textTheme.bodyMedium?.copyWith(
-                    fontSize: 15,
-                    height: 1.65,
-                    color: _hovered
-                        ? colorScheme.primary
-                        : colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            ],
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 880),
+        child: ListView.builder(
+          controller: scroll,
+          padding: const EdgeInsets.fromLTRB(20, 28, 20, 8),
+          itemCount: state.turns.length,
+          itemBuilder: (context, i) => TranscriptEntry(
+            turn: state.turns[i],
+            isStreaming: state.streaming && i == state.turns.length - 1,
+            toolActivity: state.toolActivity,
           ),
         ),
       ),

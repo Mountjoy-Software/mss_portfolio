@@ -36,6 +36,18 @@ class ChatController extends Notifier<ChatState> {
   @override
   ChatState build() => const ChatState();
 
+  void runCommand(String input, String reply) {
+    if (state.streaming) return;
+    state = state.copyWith(
+      turns: [
+        ...state.turns,
+        ChatTurn(role: 'user', content: input.trim()),
+        ChatTurn(role: 'assistant', content: reply),
+      ],
+      clearTool: true,
+    );
+  }
+
   Future<void> send(String message) async {
     if (state.streaming || message.trim().isEmpty) return;
 
