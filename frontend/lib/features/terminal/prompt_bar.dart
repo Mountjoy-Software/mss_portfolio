@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
-import 'commands.dart';
-
-class PromptBar extends StatefulWidget {
+class PromptBar extends StatelessWidget {
   const PromptBar({
     required this.controller,
     required this.focusNode,
     required this.streaming,
-    required this.onSubmit,
+    required this.menuOpen,
+    required this.onKey,
     this.usage,
     super.key,
   });
@@ -16,97 +14,9 @@ class PromptBar extends StatefulWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final bool streaming;
-  final ValueChanged<String> onSubmit;
+  final bool menuOpen;
+  final KeyEventResult Function(FocusNode, KeyEvent) onKey;
   final Map<String, dynamic>? usage;
-
-  @override
-  State<PromptBar> createState() => _PromptBarState();
-}
-
-class _PromptBarState extends State<PromptBar> {
-  int _selected = 0;
-  bool _dismissed = false;
-  String _lastText = '';
-
-  @override
-  void initState() {
-    super.initState();
-    widget.controller.addListener(_onTextChanged);
-  }
-
-  @override
-  void dispose() {
-    widget.controller.removeListener(_onTextChanged);
-    super.dispose();
-  }
-
-  void _onTextChanged() {
-    if (widget.controller.text == _lastText) return;
-    _lastText = widget.controller.text;
-    setState(() {
-      _selected = 0;
-      _dismissed = false;
-    });
-  }
-
-  List<SlashCommand> get _matches =>
-      _dismissed ? const [] : matchingCommands(widget.controller.text);
-
-  void _prefill(SlashCommand command) {
-    widget.controller.value = TextEditingValue(
-      text: command.prefill,
-      selection: TextSelection.collapsed(offset: command.prefill.length),
-    );
-  }
-
-  void _submit() {
-    if (widget.streaming) return;
-    if (widget.controller.text.trim().isEmpty) return;
-    widget.onSubmit(widget.controller.text);
-    setState(() => _dismissed = false);
-  }
-
-  KeyEventResult _onKey(FocusNode node, KeyEvent event) {
-    if (event is! KeyDownEvent) return KeyEventResult.ignored;
-    final matches = _matches;
-    final key = event.logicalKey;
-
-    if (matches.isNotEmpty) {
-      if (key == LogicalKeyboardKey.arrowDown) {
-        setState(() => _selected = (_selected + 1) % matches.length);
-        return KeyEventResult.handled;
-      }
-      if (key == LogicalKeyboardKey.arrowUp) {
-        setState(
-          () => _selected = (_selected - 1 + matches.length) % matches.length,
-        );
-        return KeyEventResult.handled;
-      }
-      if (key == LogicalKeyboardKey.escape) {
-        setState(() => _dismissed = true);
-        return KeyEventResult.handled;
-      }
-      if (key == LogicalKeyboardKey.tab) {
-        _prefill(matches[_selected.clamp(0, matches.length - 1)]);
-        return KeyEventResult.handled;
-      }
-    }
-
-    if (key == LogicalKeyboardKey.enter &&
-        !HardwareKeyboard.instance.isShiftPressed) {
-      if (matches.isNotEmpty) {
-        final chosen = matches[_selected.clamp(0, matches.length - 1)];
-        if (commandToken(widget.controller.text) != chosen.name) {
-          _prefill(chosen);
-          return KeyEventResult.handled;
-        }
-      }
-      _submit();
-      return KeyEventResult.handled;
-    }
-
-    return KeyEventResult.ignored;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -121,30 +31,17 @@ class _PromptBarState extends State<PromptBar> {
       fontSize: 11,
       color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
     );
-    final matches = _matches;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (matches.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: _CommandMenu(
-              commands: matches,
-              selected: _selected.clamp(0, matches.length - 1),
-              onHover: (i) => setState(() => _selected = i),
-              onPick: (command) {
-                _prefill(command);
-                widget.focusNode.requestFocus();
-              },
-            ),
-          ),
         AnimatedBuilder(
-          animation: widget.focusNode,
+          animation: focusNode,
           builder: (context, _) => Container(
             decoration: BoxDecoration(
+              color: colorScheme.surface,
               border: Border.all(
-                color: widget.focusNode.hasFocus
+                color: focusNode.hasFocus
                     ? colorScheme.primary.withValues(alpha: 0.8)
                     : colorScheme.onSurfaceVariant.withValues(alpha: 0.35),
               ),
@@ -166,10 +63,10 @@ class _PromptBarState extends State<PromptBar> {
                 ),
                 Expanded(
                   child: Focus(
-                    onKeyEvent: _onKey,
+                    onKeyEvent: onKey,
                     child: TextField(
-                      controller: widget.controller,
-                      focusNode: widget.focusNode,
+                      controller: controller,
+                      focusNode: focusNode,
                       autofocus: true,
                       minLines: 1,
                       maxLines: 8,
@@ -205,17 +102,17 @@ class _PromptBarState extends State<PromptBar> {
             children: [
               Expanded(
                 child: Text(
-                  widget.streaming
+                  streaming
                       ? 'working...'
-                      : matches.isNotEmpty
+                      : menuOpen
                       ? 'up/down to choose    enter or tab to fill    esc to dismiss'
                       : "Type '/help' for a list of commands.",
                   style: hintStyle,
                 ),
               ),
-              if (widget.usage != null)
+              if (usage != null)
                 Text(
-                  '${widget.usage!['cache_read']} cached / ${widget.usage!['output_tokens']} out',
+                  '${usage!['cache_read']} cached / ${usage!['output_tokens']} out',
                   style: hintStyle,
                 ),
             ],
@@ -226,18 +123,19 @@ class _PromptBarState extends State<PromptBar> {
   }
 }
 
-class _CommandMenu extends StatelessWidget {
-  const _CommandMenu({
-    required this.commands,
+class CommandMenu extends StatelessWidget {
+  const CommandMenu({
+    required this.rows,
     required this.selected,
     required this.onHover,
     required this.onPick,
+    super.key,
   });
 
-  final List<SlashCommand> commands;
+  final List<({String name, String? argHint, String description})> rows;
   final int selected;
   final ValueChanged<int> onHover;
-  final ValueChanged<SlashCommand> onPick;
+  final ValueChanged<int> onPick;
 
   @override
   Widget build(BuildContext context) {
@@ -251,17 +149,25 @@ class _CommandMenu extends StatelessWidget {
           color: colorScheme.onSurfaceVariant.withValues(alpha: 0.35),
         ),
         borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.28),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          for (final (i, command) in commands.indexed)
+          for (final (i, row) in rows.indexed)
             MouseRegion(
               cursor: SystemMouseCursors.click,
               onEnter: (_) => onHover(i),
               child: GestureDetector(
-                onTap: () => onPick(command),
+                onTap: () => onPick(i),
                 child: Container(
                   width: double.infinity,
                   color: i == selected
@@ -274,16 +180,16 @@ class _CommandMenu extends StatelessWidget {
                   child: Row(
                     children: [
                       Text(
-                        command.name,
+                        row.name,
                         style: textTheme.bodyMedium?.copyWith(
                           fontSize: 14,
                           color: colorScheme.primary,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      if (command.argHint != null)
+                      if (row.argHint != null)
                         Text(
-                          ' <${command.argHint}>',
+                          ' <${row.argHint}>',
                           style: textTheme.bodyMedium?.copyWith(
                             fontSize: 13,
                             color: colorScheme.onSurfaceVariant.withValues(
@@ -300,7 +206,7 @@ class _CommandMenu extends StatelessWidget {
                       ),
                       Expanded(
                         child: Text(
-                          command.description,
+                          row.description,
                           style: textTheme.bodyMedium?.copyWith(
                             fontSize: 13,
                             color: colorScheme.onSurfaceVariant,

@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.v1 import api_router
 from src.config import settings
+from src.security import Guard
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -21,6 +22,8 @@ if settings.CORS_ORIGINS:
     )
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
+app.add_middleware(Guard)
 
 
 if __name__ == "__main__":

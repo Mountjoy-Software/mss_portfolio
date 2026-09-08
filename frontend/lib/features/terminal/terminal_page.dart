@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_client.dart';
@@ -26,17 +27,91 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
   final _focus = FocusNode();
   final _scroll = ScrollController();
 
+  int _selected = 0;
+  bool _dismissed = false;
+  String _lastText = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _input.addListener(_onTextChanged);
+  }
+
   @override
   void dispose() {
+    _input.removeListener(_onTextChanged);
     _input.dispose();
     _focus.dispose();
     _scroll.dispose();
     super.dispose();
   }
 
+  void _onTextChanged() {
+    if (_input.text == _lastText) return;
+    _lastText = _input.text;
+    setState(() {
+      _selected = 0;
+      _dismissed = false;
+    });
+  }
+
+  List<SlashCommand> get _matches =>
+      _dismissed ? const [] : matchingCommands(_input.text);
+
+  void _prefill(SlashCommand command) {
+    _input.value = TextEditingValue(
+      text: command.prefill,
+      selection: TextSelection.collapsed(offset: command.prefill.length),
+    );
+    _focus.requestFocus();
+  }
+
+  KeyEventResult _onKey(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    final matches = _matches;
+    final key = event.logicalKey;
+
+    if (matches.isNotEmpty) {
+      if (key == LogicalKeyboardKey.arrowDown) {
+        setState(() => _selected = (_selected + 1) % matches.length);
+        return KeyEventResult.handled;
+      }
+      if (key == LogicalKeyboardKey.arrowUp) {
+        setState(
+          () => _selected = (_selected - 1 + matches.length) % matches.length,
+        );
+        return KeyEventResult.handled;
+      }
+      if (key == LogicalKeyboardKey.escape) {
+        setState(() => _dismissed = true);
+        return KeyEventResult.handled;
+      }
+      if (key == LogicalKeyboardKey.tab) {
+        _prefill(matches[_selected.clamp(0, matches.length - 1)]);
+        return KeyEventResult.handled;
+      }
+    }
+
+    if (key == LogicalKeyboardKey.enter &&
+        !HardwareKeyboard.instance.isShiftPressed) {
+      if (matches.isNotEmpty) {
+        final chosen = matches[_selected.clamp(0, matches.length - 1)];
+        if (commandToken(_input.text) != chosen.name) {
+          _prefill(chosen);
+          return KeyEventResult.handled;
+        }
+      }
+      _send(_input.text);
+      return KeyEventResult.handled;
+    }
+
+    return KeyEventResult.ignored;
+  }
+
   void _send(String text) {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return;
+    if (ref.read(chatControllerProvider).streaming) return;
     _input.clear();
     _focus.requestFocus();
     if (trimmed.startsWith('/')) {
@@ -65,8 +140,7 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
       '/experience' => experienceReply(profile),
       '/skills' => skillsReply(profile),
       '/contact' => contactReply(profile),
-      _ =>
-        'Unknown command `$token`. Type `/help` to see what is available.',
+      _ => 'Unknown command `$token`. Type `/help` to see what is available.',
     };
   }
 
@@ -112,6 +186,7 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
         state.turns.isNotEmpty &&
         state.turns.last.content.isEmpty;
     final showBackdrop = state.turns.isEmpty || awaiting;
+    final matches = _matches;
 
     return Scaffold(
       body: SafeArea(
@@ -135,6 +210,27 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
                           : _Transcript(scroll: _scroll, state: state),
                     ),
                   ),
+                  if (matches.isNotEmpty)
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 8,
+                      child: _Column(
+                        child: CommandMenu(
+                          rows: [
+                            for (final c in matches)
+                              (
+                                name: c.name,
+                                argHint: c.argHint,
+                                description: c.description,
+                              ),
+                          ],
+                          selected: _selected.clamp(0, matches.length - 1),
+                          onHover: (i) => setState(() => _selected = i),
+                          onPick: (i) => _prefill(matches[i]),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -145,8 +241,9 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
                   controller: _input,
                   focusNode: _focus,
                   streaming: state.streaming,
+                  menuOpen: matches.isNotEmpty,
+                  onKey: _onKey,
                   usage: state.usage,
-                  onSubmit: _send,
                 ),
               ),
             ),

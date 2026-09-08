@@ -59,6 +59,47 @@ class SiteStack(Stack):
             validation=acm.CertificateValidation.from_dns(zone),
         )
 
+        security_headers = cloudfront.ResponseHeadersPolicy(
+            self,
+            "SecurityHeaders",
+            security_headers_behavior=cloudfront.ResponseSecurityHeadersBehavior(
+                strict_transport_security=cloudfront.ResponseHeadersStrictTransportSecurity(
+                    access_control_max_age=Duration.days(365),
+                    include_subdomains=True,
+                    preload=True,
+                    override=True,
+                ),
+                content_type_options=cloudfront.ResponseHeadersContentTypeOptions(
+                    override=True
+                ),
+                frame_options=cloudfront.ResponseHeadersFrameOptions(
+                    frame_option=cloudfront.HeadersFrameOption.DENY,
+                    override=True,
+                ),
+                referrer_policy=cloudfront.ResponseHeadersReferrerPolicy(
+                    referrer_policy=cloudfront.HeadersReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN,
+                    override=True,
+                ),
+                xss_protection=cloudfront.ResponseHeadersXSSProtection(
+                    protection=True, mode_block=True, override=True
+                ),
+            ),
+            custom_headers_behavior=cloudfront.ResponseCustomHeadersBehavior(
+                custom_headers=[
+                    cloudfront.ResponseCustomHeader(
+                        header="Permissions-Policy",
+                        value="camera=(), microphone=(), geolocation=(), payment=()",
+                        override=True,
+                    ),
+                    cloudfront.ResponseCustomHeader(
+                        header="Cross-Origin-Opener-Policy",
+                        value="same-origin",
+                        override=True,
+                    ),
+                ]
+            ),
+        )
+
         spa_router = cloudfront.Function(
             self,
             "SpaRouter",
@@ -79,6 +120,7 @@ class SiteStack(Stack):
                 origin=origins.S3BucketOrigin.with_origin_access_control(self.bucket),
                 viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
                 cache_policy=cloudfront.CachePolicy.CACHING_OPTIMIZED,
+                response_headers_policy=security_headers,
                 compress=True,
                 function_associations=[
                     cloudfront.FunctionAssociation(
@@ -100,6 +142,7 @@ class SiteStack(Stack):
                     allowed_methods=cloudfront.AllowedMethods.ALLOW_ALL,
                     cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
                     origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
+                    response_headers_policy=security_headers,
                     compress=False,
                 )
             },

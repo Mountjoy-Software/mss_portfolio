@@ -16,8 +16,12 @@ class Settings(BaseSettings):
     DDB_ENDPOINT: str = ""
     AWS_REGION: str = "us-east-1"
 
-    CHAT_RATE_LIMIT: int = 20
-    CHAT_RATE_WINDOW_SECONDS: int = 3600
+    CHAT_RATE_LIMIT: int = 5
+    CHAT_RATE_WINDOW_SECONDS: int = 60
+    CHAT_HOURLY_LIMIT: int = 40
+    API_RATE_LIMIT: int = 60
+    API_RATE_WINDOW_SECONDS: int = 60
+    MAX_BODY_BYTES: int = 65536
     IP_HASH_SALT: str = "local-dev-salt"
 
     CORS_ORIGINS: list[str] = []

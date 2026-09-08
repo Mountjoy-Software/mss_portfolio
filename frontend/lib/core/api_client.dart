@@ -39,17 +39,10 @@ class ApiClient {
 
     final response = await _client.send(request);
 
-    if (response.statusCode == 429) {
-      yield const ChatEvent(
-        ChatEventKind.error,
-        text: 'Rate limit reached. Try again a bit later.',
-      );
-      return;
-    }
     if (response.statusCode != 200) {
       yield ChatEvent(
         ChatEventKind.error,
-        text: 'The assistant is unavailable (${response.statusCode}).',
+        text: await _detail(response),
       );
       return;
     }
@@ -72,6 +65,17 @@ class ApiClient {
       }
     }
   }
+}
+
+Future<String> _detail(http.StreamedResponse response) async {
+  try {
+    final body = await response.stream.bytesToString();
+    final decoded = jsonDecode(body);
+    if (decoded is Map && decoded['detail'] is String) {
+      return decoded['detail'] as String;
+    }
+  } catch (_) {}
+  return 'The assistant is unavailable right now (${response.statusCode}).';
 }
 
 class ApiException implements Exception {

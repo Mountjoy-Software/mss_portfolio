@@ -23,20 +23,25 @@ def _visitor_key(ip: str) -> str:
     return digest[:32]
 
 
-def _consume(ip: str) -> int:
-    window = int(time.time()) // settings.CHAT_RATE_WINDOW_SECONDS
+def _consume(bucket: str, ip: str, window_seconds: int) -> int:
+    window = int(time.time()) // window_seconds
     updated = table().update_item(
-        Key={"pk": f"rate#{_visitor_key(ip)}", "sk": str(window)},
+        Key={"pk": f"rate#{bucket}#{_visitor_key(ip)}", "sk": str(window)},
         UpdateExpression="ADD hits :one SET expires_at = if_not_exists(expires_at, :ttl)",
         ExpressionAttributeValues={
             ":one": 1,
-            ":ttl": (window + 2) * settings.CHAT_RATE_WINDOW_SECONDS,
+            ":ttl": (window + 2) * window_seconds,
         },
         ReturnValues="UPDATED_NEW",
     )
     return int(updated["Attributes"]["hits"])
 
 
-async def within_rate_limit(ip: str) -> bool:
-    hits = await asyncio.to_thread(_consume, ip)
-    return hits <= settings.CHAT_RATE_LIMIT
+async def within_rate_limit(
+    bucket: str, ip: str, limit: int, window_seconds: int
+) -> bool:
+    try:
+        hits = await asyncio.to_thread(_consume, bucket, ip, window_seconds)
+    except Exception:
+        return True
+    return hits <= limit
