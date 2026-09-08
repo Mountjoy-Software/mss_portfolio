@@ -38,24 +38,27 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
     _input.clear();
     _focus.requestFocus();
     ref.read(chatControllerProvider.notifier).send(text);
-    _scrollToEnd();
   }
 
-  void _scrollToEnd() {
+  void _stickToEnd() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scroll.hasClients) return;
-      _scroll.animateTo(
-        _scroll.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOut,
-      );
+      _scroll.jumpTo(_scroll.position.maxScrollExtent);
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(chatControllerProvider, (previous, next) {
+      final grew = next.turns.length != (previous?.turns.length ?? 0);
+      final tokenArrived =
+          next.turns.isNotEmpty &&
+          previous?.turns.isNotEmpty == true &&
+          next.turns.last.content.length !=
+              previous!.turns.last.content.length;
+      if (grew || tokenArrived) _stickToEnd();
+    });
     final state = ref.watch(chatControllerProvider);
-    if (state.streaming) _scrollToEnd();
 
     return Scaffold(
       body: SafeArea(
