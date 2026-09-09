@@ -1,0 +1,77 @@
+title Mountjoy Software Solutions — Portfolio Architecture
+
+// Paste into https://app.eraser.io as a Cloud Architecture Diagram.
+// Icon names may need adjusting in the editor; the structure is the point.
+
+Internet [icon: globe, color: grey] {
+  End Users [icon: users, label: "End Users\nBrowser · Flutter web"]
+  Route 53 [icon: aws-route53, color: purple, label: "Route 53\nmountjoy.io public zone\nA + AAAA alias records"]
+  GitHub [icon: github, label: "GitHub\nMountjoy-Software/mss_portfolio\nActions on push to main"]
+}
+
+External Services [icon: cloud, color: purple] {
+  Anthropic API [icon: anthropic, color: orange, label: "Anthropic API\nclaude-sonnet-5\nSSE streaming · tool use\n1h prompt cache"]
+  Qdrant Cloud [icon: database, color: red, label: "Qdrant Cloud\nportfolio collection · 71 points\n512-dim cosine · free tier"]
+}
+
+AWS us-east-1 [icon: aws, color: blue] {
+  Edge [icon: shield, color: blue] {
+    CloudFront [icon: aws-cloudfront, color: blue, label: "CloudFront\nHTTP/2 + HTTP/3 · PriceClass 100\n/*  → S3 (OAC)\n/api/* → ALB, caching disabled"]
+    SPA Router [icon: aws-lambda, color: teal, label: "CloudFront Function\nviewer-request on /*\nrewrites extensionless → index.html"]
+    Security Headers [icon: lock, color: teal, label: "Response Headers Policy\nHSTS · nosniff · DENY\nreferrer + permissions policy"]
+    ACM [icon: aws-certificate-manager, color: green, label: "ACM\nmountjoy.io + www\napi.mountjoy.io\nDNS validated"]
+  }
+
+  Static Site [icon: folder, color: orange] {
+    S3 [icon: aws-s3, color: green, label: "S3 (private)\nFlutter web bundle + /media\nOAC only · BlockPublicAccess\nmax-age=0, must-revalidate"]
+  }
+
+  VPC [icon: aws-vpc, color: blue, label: "VPC · 2 AZs · public subnets only · no NAT gateway"] {
+    ALB [icon: aws-elastic-load-balancing, color: purple, label: "Application Load Balancer\nHTTPS only · idle timeout 300s\nSG: CloudFront prefix list\npl-3b927c52 only"]
+
+    ECS [icon: aws-ecs, color: orange, label: "ECS Fargate · 1 service"] {
+      API [icon: aws-fargate, color: green, label: "FastAPI\n256 CPU · 512 MB · 1 task\nassign_public_ip\ncircuit breaker + rollback\nimage tagged by commit SHA"]
+    }
+
+    Endpoints [icon: aws-privatelink, color: teal, label: "Gateway Endpoints\nS3 + DynamoDB · free\nkeeps that traffic off the internet"]
+  }
+
+  Data [icon: aws-dynamodb, color: green] {
+    DynamoDB [icon: aws-dynamodb, color: blue, label: "DynamoDB · mss-portfolio\nsingle table · pk/sk · on-demand\nrate limits keyed by salted IP hash\nTTL on expires_at"]
+    Secrets [icon: aws-secrets-manager, color: red, label: "Secrets Manager\nanthropic-api-key\nip-hash-salt\nqdrant url + api key"]
+    ECR [icon: aws-ecr, color: orange, label: "ECR · mss-portfolio-backend\nscan on push · keep last 10"]
+  }
+
+  Bedrock [icon: aws-bedrock, color: purple, label: "Bedrock\namazon.titan-embed-text-v2:0\n512 dimensions · normalised\nembeds corpus + each query"]
+
+  Deploy [icon: aws-iam, color: red] {
+    OIDC Role [icon: aws-iam, color: red, label: "mss-portfolio-github-deploy\nOIDC federated · no stored keys\nscoped to repository + refs/heads/main\nassumes CDK bootstrap roles"]
+  }
+}
+
+// Request path
+End Users > Route 53: DNS
+Route 53 > CloudFront: alias
+CloudFront > S3: default behaviour, OAC signed
+CloudFront > SPA Router: viewer-request
+CloudFront > Security Headers
+ACM > CloudFront
+ACM > ALB
+CloudFront > ALB: /api/* via api.mountjoy.io, HTTPS_ONLY
+ALB > API: HTTP 8000, health /api/v1/health
+
+// Application dependencies
+API > DynamoDB: rate limit counters
+API > Secrets: injected at task start
+API > Bedrock: embed corpus and queries
+API > Qdrant Cloud: index build, kNN and filtered search
+API > Anthropic API: streamed chat with retrieved context
+API > Endpoints: S3 + DynamoDB traffic
+ECR > API: image pulled by task definition
+
+// Delivery
+GitHub > OIDC Role: AssumeRoleWithWebIdentity
+OIDC Role > ECR: build and push commit-tagged image
+OIDC Role > ECS: cdk deploy with image_tag
+OIDC Role > S3: sync bundle, delete removed
+OIDC Role > CloudFront: invalidate /*
