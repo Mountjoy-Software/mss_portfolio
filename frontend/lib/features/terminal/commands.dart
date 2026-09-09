@@ -12,6 +12,7 @@ class SlashCommand {
 
 const slashCommands = [
   SlashCommand('/help', 'List everything you can ask or run here'),
+  SlashCommand('/about', 'Who he is, where he is from, how he trained'),
   SlashCommand('/projects', 'What Ross has built, and the stack behind each'),
   SlashCommand('/experience', 'Where he has worked and what shipped'),
   SlashCommand('/skills', 'Languages, frameworks and infrastructure'),
