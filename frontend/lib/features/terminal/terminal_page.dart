@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/api_client.dart';
 import '../../core/backdrop.dart';
 import '../../core/layout.dart';
+import '../../core/models.dart';
 import '../../core/preferences.dart';
 import 'chat_controller.dart';
 import 'commands.dart';
@@ -234,6 +235,23 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
     });
   }
 
+  void _revealTopOf(ChatTurn turn) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scroll.hasClients) return;
+      _scroll.jumpTo(_scroll.position.maxScrollExtent);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final target = GlobalObjectKey(turn).currentContext;
+        if (target == null || !_scroll.hasClients) return;
+        Scrollable.ensureVisible(
+          target,
+          alignment: 0,
+          duration: const Duration(milliseconds: 240),
+          curve: Curves.easeOut,
+        );
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen(chatControllerProvider, (_, next) {
@@ -246,6 +264,11 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
       _turnCount = turnCount;
       _tailLength = tailLength;
       if (submitted) _pinned = true;
+      final arrived = next.turns.isEmpty ? null : next.turns.last;
+      if (submitted && arrived != null && arrived.isGraph) {
+        _revealTopOf(arrived);
+        return;
+      }
       if (_pinned) _stickToEnd();
     });
     final state = ref.watch(chatControllerProvider);
@@ -430,6 +453,7 @@ class _Transcript extends StatelessWidget {
       padding: const EdgeInsets.only(top: 28, bottom: 8),
       itemCount: state.turns.length,
       itemBuilder: (context, i) => TranscriptEntry(
+        key: GlobalObjectKey(state.turns[i]),
         turn: state.turns[i],
         isStreaming: state.streaming && i == state.turns.length - 1,
         toolActivity: state.toolActivity,
