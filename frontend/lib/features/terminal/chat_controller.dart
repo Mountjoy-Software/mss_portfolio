@@ -48,6 +48,18 @@ class ChatController extends Notifier<ChatState> {
     );
   }
 
+  void runGraph(String input, String seed) {
+    if (state.streaming) return;
+    state = state.copyWith(
+      turns: [
+        ...state.turns,
+        ChatTurn(role: 'user', content: input.trim()),
+        ChatTurn(role: 'assistant', content: '', graphSeed: seed),
+      ],
+      clearTool: true,
+    );
+  }
+
   Future<void> send(String message) async {
     if (state.streaming || message.trim().isEmpty) return;
 
@@ -56,7 +68,7 @@ class ChatController extends Notifier<ChatState> {
       ...state.turns,
       ChatTurn(role: 'user', content: message.trim()),
     ];
-    final history = [...turns];
+    final history = turns.where((t) => !t.isGraph).toList();
 
     state = state.copyWith(
       turns: [...turns, pending],
@@ -65,7 +77,8 @@ class ChatController extends Notifier<ChatState> {
     );
 
     try {
-      await for (final event in ref.read(apiClientProvider).streamChat(history)) {
+      await for (final event
+          in ref.read(apiClientProvider).streamChat(history)) {
         switch (event.kind) {
           case ChatEventKind.token:
             pending.content += event.text;

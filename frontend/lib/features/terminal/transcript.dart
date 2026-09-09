@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_spinners/flutter_spinners.dart';
 
 import '../../core/markdown_style.dart';
+import '../graph/graph_panel.dart';
 import '../../core/models.dart';
 import '../../core/streaming_markdown.dart';
 
@@ -65,6 +66,13 @@ class TranscriptEntry extends StatelessWidget {
             ),
           ],
         ),
+      );
+    }
+
+    if (turn.isGraph) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 26),
+        child: GraphPanel(seed: turn.graphSeed!),
       );
     }
 

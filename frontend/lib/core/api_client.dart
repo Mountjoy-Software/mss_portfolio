@@ -12,8 +12,7 @@ const _apiBaseOverride = String.fromEnvironment('API_BASE');
 class ApiClient {
   http.Client? _cached;
 
-  http.Client get _client =>
-      _cached ??= FetchClient(mode: RequestMode.cors);
+  http.Client get _client => _cached ??= FetchClient(mode: RequestMode.cors);
 
   static String get baseUrl =>
       _apiBaseOverride.isNotEmpty ? _apiBaseOverride : Uri.base.origin;
@@ -30,6 +29,23 @@ class ApiClient {
     );
   }
 
+  Future<List<GraphNode>> graphSeed() => _nodes(_uri('/graph/seed'));
+
+  Future<List<GraphNode>> expandNode(String id) =>
+      _nodes(_uri('/graph/expand/$id'));
+
+  Future<List<GraphNode>> _nodes(Uri uri) async {
+    final response = await _client.get(uri);
+    if (response.statusCode != 200) {
+      throw ApiException('The graph is unavailable', response.statusCode);
+    }
+    final decoded =
+        jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+    return (decoded['nodes'] as List<dynamic>)
+        .map((e) => GraphNode.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
   Stream<ChatEvent> streamChat(List<ChatTurn> history) async* {
     final request = http.Request('POST', _uri('/chat'))
       ..headers['content-type'] = 'application/json'
@@ -40,10 +56,7 @@ class ApiClient {
     final response = await _client.send(request);
 
     if (response.statusCode != 200) {
-      yield ChatEvent(
-        ChatEventKind.error,
-        text: await _detail(response),
-      );
+      yield ChatEvent(ChatEventKind.error, text: await _detail(response));
       return;
     }
 

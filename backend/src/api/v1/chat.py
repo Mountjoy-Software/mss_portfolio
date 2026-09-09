@@ -3,7 +3,7 @@ from fastapi.responses import StreamingResponse
 
 from src.config import settings
 from src.schemas.chat import ChatRequest
-from src.services import claude, dynamo
+from src.services import claude, dynamo, vectors
 
 router = APIRouter()
 
@@ -38,8 +38,11 @@ async def chat(body: ChatRequest, request: Request) -> StreamingResponse:
         raise HTTPException(429, TOO_MUCH)
 
     history = [t.model_dump() for t in body.messages]
+    retrieved = await vectors.context(
+        history[-1]["content"], settings.RAG_CONTEXT_LIMIT
+    )
     return StreamingResponse(
-        claude.stream_reply(history),
+        claude.stream_reply(history, retrieved),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
     )

@@ -9,6 +9,7 @@ class Profile {
     required this.skills,
     required this.experience,
     required this.projects,
+    required this.links,
   });
 
   final String name;
@@ -20,6 +21,7 @@ class Profile {
   final Map<String, List<String>> skills;
   final List<Experience> experience;
   final List<Project> projects;
+  final Map<String, String> links;
 
   factory Profile.fromJson(Map<String, dynamic> json) => Profile(
     name: json['name'] as String,
@@ -40,6 +42,9 @@ class Profile {
     projects: (json['projects'] as List<dynamic>? ?? [])
         .map((e) => Project.fromJson(e as Map<String, dynamic>))
         .toList(),
+    links: (json['links'] as Map<String, dynamic>? ?? {}).map(
+      (key, value) => MapEntry(key, '$value'),
+    ),
   );
 }
 
@@ -82,6 +87,7 @@ class Project {
     required this.details,
     required this.stack,
     required this.repo,
+    required this.url,
   });
 
   final String slug;
@@ -90,6 +96,7 @@ class Project {
   final String details;
   final List<String> stack;
   final String? repo;
+  final String? url;
 
   factory Project.fromJson(Map<String, dynamic> json) => Project(
     slug: json['slug'] as String,
@@ -100,6 +107,7 @@ class Project {
         .map((e) => e as String)
         .toList(),
     repo: json['repo'] as String?,
+    url: json['url'] as String?,
   );
 }
 
@@ -118,10 +126,7 @@ class ChatEvent {
       case 'token':
         return ChatEvent(ChatEventKind.token, text: json['text'] as String);
       case 'tool':
-        return ChatEvent(
-          ChatEventKind.tool,
-          toolName: json['name'] as String?,
-        );
+        return ChatEvent(ChatEventKind.tool, toolName: json['name'] as String?);
       case 'done':
         return ChatEvent(ChatEventKind.done, usage: json);
       default:
@@ -134,10 +139,46 @@ class ChatEvent {
 }
 
 class ChatTurn {
-  ChatTurn({required this.role, required this.content});
+  ChatTurn({required this.role, required this.content, this.graphSeed});
 
   final String role;
+  final String? graphSeed;
   String content;
 
+  bool get isGraph => graphSeed != null;
+
   Map<String, String> toJson() => {'role': role, 'content': content};
+}
+
+class GraphNode {
+  GraphNode({
+    required this.id,
+    required this.kind,
+    required this.title,
+    required this.payload,
+    this.score,
+  });
+
+  final String id;
+  final String kind;
+  final String title;
+  final Map<String, dynamic> payload;
+  final double? score;
+
+  bool get isCategory => kind == 'category';
+
+  factory GraphNode.fromJson(Map<String, dynamic> json) {
+    final payload = Map<String, dynamic>.from(json)
+      ..remove('id')
+      ..remove('kind')
+      ..remove('title')
+      ..remove('score');
+    return GraphNode(
+      id: json['id'] as String,
+      kind: json['kind'] as String? ?? 'unknown',
+      title: json['title'] as String? ?? '',
+      score: (json['score'] as num?)?.toDouble(),
+      payload: payload,
+    );
+  }
 }

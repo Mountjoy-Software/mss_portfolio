@@ -18,6 +18,19 @@ MSG
   exit 1
 fi
 
+export AWS_PROFILE="${AWS_PROFILE:-mss}"
+export AWS_REGION="${AWS_REGION:-us-east-1}"
+
+if [ -z "${AWS_ACCESS_KEY_ID:-}" ]; then
+  if ! creds=$(aws configure export-credentials --format env-no-export 2>/dev/null); then
+    echo "Could not export AWS credentials. Run: aws login --profile $AWS_PROFILE" >&2
+    exit 1
+  fi
+  set -a
+  eval "$creds"
+  set +a
+fi
+
 if [ ! -d frontend/build/web ]; then
   echo "frontend/build/web is missing, building it"
   (cd frontend && flutter build web --release)

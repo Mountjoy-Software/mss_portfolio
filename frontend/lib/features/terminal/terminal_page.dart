@@ -116,8 +116,19 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
     _focus.requestFocus();
     if (trimmed.startsWith('/')) {
       final controller = ref.read(chatControllerProvider.notifier);
-      if (commandToken(trimmed) == '/clear') {
+      final token = commandToken(trimmed);
+      if (token == '/clear') {
         controller.reset();
+        return;
+      }
+      const graphs = {
+        '/projects': 'projects',
+        '/experience': 'experience',
+        '/skills': 'skills',
+      };
+      final seed = graphs[token];
+      if (seed != null) {
+        controller.runGraph(trimmed, seed);
         return;
       }
       controller.runCommand(trimmed, _replyFor(trimmed));
@@ -132,16 +143,12 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
     if (token == '/set-theme') return _applyTheme(commandArgument(input));
 
     final profile = ref.read(profileProvider).value;
-    if (profile == null) {
-      return 'Still loading that data. Try again in a moment.';
+    if (token == '/contact') {
+      return profile == null
+          ? 'Still loading that data. Try again in a moment.'
+          : contactReply(profile);
     }
-    return switch (token) {
-      '/projects' => projectsReply(profile),
-      '/experience' => experienceReply(profile),
-      '/skills' => skillsReply(profile),
-      '/contact' => contactReply(profile),
-      _ => 'Unknown command `$token`. Type `/help` to see what is available.',
-    };
+    return 'Unknown command `$token`. Type `/help` to see what is available.';
   }
 
   String _applyTheme(String argument) {

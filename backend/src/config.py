@@ -12,6 +12,13 @@ class Settings(BaseSettings):
     CHAT_MODEL: str = "claude-sonnet-5"
     CHAT_MAX_TOKENS: int = 8000
 
+    QDRANT_URL: str = "http://localhost:6333"
+    QDRANT_API_KEY: str = ""
+    EMBED_MODEL: str = "amazon.titan-embed-text-v2:0"
+    EMBED_DIMENSIONS: int = 512
+    GRAPH_EXPAND_LIMIT: int = 7
+    RAG_CONTEXT_LIMIT: int = 6
+
     DDB_TABLE: str = "mss-portfolio"
     DDB_ENDPOINT: str = ""
     AWS_REGION: str = "us-east-1"

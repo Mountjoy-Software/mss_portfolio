@@ -9,11 +9,7 @@ MarkdownStyleSheet terminalMarkdownStyleSheet(BuildContext context) {
   return MarkdownStyleSheet.fromTheme(theme).copyWith(
     blockSpacing: 10,
     listIndent: 22,
-    p: body?.copyWith(
-      color: colorScheme.onSurface,
-      fontSize: 15,
-      height: 1.65,
-    ),
+    p: body?.copyWith(color: colorScheme.onSurface, fontSize: 15, height: 1.65),
     h1: body?.copyWith(
       color: colorScheme.onSurface,
       fontSize: 21,

@@ -58,52 +58,23 @@ does not cover something it will say so rather than guess.
 ''';
 }
 
-String projectsReply(Profile profile) {
-  if (profile.projects.isEmpty) return 'No projects on record yet.';
-  final rows = profile.projects
-      .map(
-        (p) => [
-          '**${p.name}**',
-          p.blurb,
-          '`${p.stack.join('`  `')}`',
-          if (p.repo != null) '[source](${p.repo})',
-        ].join('\n\n'),
-      )
-      .join('\n\n---\n\n');
-  return '**Projects**\n\n$rows';
-}
 
-String experienceReply(Profile profile) {
-  if (profile.experience.isEmpty) {
-    return 'The work history is not filled in yet. Ask about the projects instead, or email ${profile.email}.';
-  }
-  final rows = profile.experience
-      .map(
-        (e) => [
-          '**${e.role}** — ${e.company}',
-          '${e.start} to ${e.end}',
-          ...e.highlights.map((h) => '- $h'),
-          if (e.stack.isNotEmpty) '`${e.stack.join('`  `')}`',
-        ].join('\n\n'),
-      )
-      .join('\n\n---\n\n');
-  return '**Experience**\n\n$rows';
-}
 
-String skillsReply(Profile profile) {
-  if (profile.skills.isEmpty) return 'No skills on record yet.';
-  final rows = profile.skills.entries
-      .map((e) => '**${e.key}**\n\n`${e.value.join('`  `')}`')
-      .join('\n\n');
-  return '**Skills**\n\n$rows';
-}
 
-String contactReply(Profile profile) => '''
+String contactReply(Profile profile) {
+  final links = profile.links.entries
+      .map((e) => '- ${e.key}: <${e.value}>')
+      .join('\n');
+  return '''
 **Contact**
 
-${profile.name} — ${profile.business}
+${profile.name}, ${profile.business}
+${profile.location}
 
 Email: <${profile.email}>
 
+$links
+
 Happy to talk about a project, a contract, or a role.
 ''';
+}

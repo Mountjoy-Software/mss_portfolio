@@ -102,9 +102,38 @@ def _sse(event: str, **data) -> str:
     return f"data: {json.dumps({'event': event, **data})}\n\n"
 
 
-async def stream_reply(history: list[dict]) -> AsyncIterator[str]:
+def _with_context(history: list[dict], retrieved: list[dict]) -> list[dict]:
+    if not retrieved or not history:
+        return history
+    excerpts = "\n\n".join(
+        f"[{doc['kind']}] {doc['title']}\n{doc['text']}" for doc in retrieved
+    )
+    messages = list(history)
+    last = dict(messages[-1])
+    if last.get("role") != "user":
+        return history
+    messages[-1] = {
+        "role": "user",
+        "content": [
+            {
+                "type": "text",
+                "text": (
+                    "Excerpts retrieved from Ross's record by vector search, "
+                    "most relevant first. Use them where they help and ignore "
+                    "them where they do not.\n\n" + excerpts
+                ),
+            },
+            {"type": "text", "text": last["content"]},
+        ],
+    }
+    return messages
+
+
+async def stream_reply(
+    history: list[dict], retrieved: list[dict] | None = None
+) -> AsyncIterator[str]:
     try:
-        async for frame in _stream_turns(history):
+        async for frame in _stream_turns(_with_context(history, retrieved or [])):
             yield frame
     except RateLimitError:
         log.warning("anthropic rate limited the chat request")
