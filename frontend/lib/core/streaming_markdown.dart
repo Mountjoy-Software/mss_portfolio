@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'api_client.dart';
+import 'image_viewer.dart';
 
 String resolveMedia(String path) =>
     Uri.parse(path).hasScheme ? path : '${ApiClient.baseUrl}$path';
@@ -24,40 +25,58 @@ class MarkdownImage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: Image.network(
-              resolveMedia(src),
-              fit: BoxFit.contain,
-              errorBuilder: (context, _, _) => Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  border: Border.all(color: colorScheme.outlineVariant),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  'image unavailable',
-                  style: textTheme.bodySmall?.copyWith(
-                    fontSize: 11,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
+          MouseRegion(
+            cursor: SystemMouseCursors.zoomIn,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => showImageViewer(
+                context,
+                src: resolveMedia(src),
+                caption: caption,
               ),
-              loadingBuilder: (context, child, progress) => progress == null
-                  ? child
-                  : SizedBox(
-                      height: 120,
-                      child: Center(
-                        child: SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: colorScheme.primary,
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: Image.network(
+                      resolveMedia(src),
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, _, _) => Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: colorScheme.outlineVariant),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'image unavailable',
+                          style: textTheme.bodySmall?.copyWith(
+                            fontSize: 11,
+                            color: colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ),
+                      loadingBuilder: (context, child, progress) =>
+                          progress == null
+                          ? child
+                          : SizedBox(
+                              height: 120,
+                              width: double.infinity,
+                              child: Center(
+                                child: SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: colorScheme.primary,
+                                  ),
+                                ),
+                              ),
+                            ),
                     ),
+                  ),
+                  const Positioned(right: 6, bottom: 6, child: ZoomBadge()),
+                ],
+              ),
             ),
           ),
           if (caption != null && caption!.isNotEmpty)
