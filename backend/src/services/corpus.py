@@ -35,7 +35,7 @@ def _skill_docs(profile: dict) -> list[Doc]:
                 key=f"skill_group:{group}",
                 kind="skill_group",
                 title=label,
-                text=f"{label.capitalize()} skills Ross Mountjoy works with: "
+                text=f"Skills Ross Mountjoy works with in {label}: "
                 + ", ".join(items)
                 + ".",
                 payload={"group": group, "skills": items},
@@ -47,7 +47,7 @@ def _skill_docs(profile: dict) -> list[Doc]:
                     key=f"skill:{group}:{item}",
                     kind="skill",
                     title=item,
-                    text=f"{item}. A {group.replace('_', ' ')} skill used by Ross Mountjoy.",
+                    text=f"{item}. A skill Ross Mountjoy works with, in {label}.",
                     payload={"group": group},
                 )
             )

@@ -773,7 +773,7 @@ class _Inspector extends StatelessWidget {
   final VoidCallback? onExpand;
   final VoidCallback? onCollapse;
 
-  static const _hidden = {'deck', 'text', 'skills', 'media'};
+  static const _hidden = {'deck', 'text', 'media'};
 
   @override
   Widget build(BuildContext context) {

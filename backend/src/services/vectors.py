@@ -46,24 +46,26 @@ class Link:
 
 LINKS = {
     "project": [
-        Link("skill", "its stack", 20, listed=("stack", "title")),
-        Link("skill", "nearest other skills", 3),
+        Link("skill", "its stack, closest first", 6, listed=("stack", "title")),
+        Link("skill", "nearest other skills", 2),
         Link("role", "nearest role", 1),
     ],
     "role": [
-        Link("highlight", "what shipped in the role", 12, match=("company", "role")),
-        Link("skill", "its stack", 20, listed=("stack", "title")),
-        Link("project", "nearest projects", 3),
+        Link("highlight", "what shipped in the role", 8, match=("company", "role")),
+        Link("skill", "its stack, closest first", 6, listed=("stack", "title")),
+        Link("project", "nearest projects", 2),
     ],
     "highlight": [
         Link("skill", "nearest skills", 4),
         Link("project", "nearest projects", 2),
     ],
-    "skill_group": [Link("skill", "skills in the group", 40, match=("group",))],
+    "skill_group": [
+        Link("skill", "skills in the group, closest first", 14, match=("group",))
+    ],
     "skill": [
-        Link("project", "projects listing it", 10, listed=("title", "stack")),
-        Link("role", "roles listing it", 10, listed=("title", "stack")),
-        Link("highlight", "nearest work", 3),
+        Link("project", "projects listing it", 6, listed=("title", "stack")),
+        Link("role", "roles listing it", 4, listed=("title", "stack")),
+        Link("highlight", "nearest work", 2),
     ],
     "bio": [
         Link("role", "roles held", 4),

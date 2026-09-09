@@ -5,7 +5,7 @@ infrastructure is part of what it's meant to show.
 
 ## Stack
 
-- **Frontend**: Flutter web, Riverpod, go_router
+- **Frontend**: Flutter web, Riverpod
 - **Backend**: FastAPI on Python 3.12
 - **LLM**: Anthropic Claude (streaming, tool use, prompt caching)
 - **Infra**: AWS CDK in Python
@@ -82,27 +82,3 @@ npx aws-cdk deploy --all -c image_tag=<sha>
 ```
 
 Data stack first, since the task definition points at an image that has to exist already.
-
-## Notes
-
-Things that took a while to work out, kept here so I don't repeat them.
-
-**`addListener` opens the load balancer by default.** It adds `0.0.0.0/0` next to the
-prefix list rule, which quietly cancels it out. Pass `open=False`.
-
-**Point the CloudFront origin at the custom domain, not the ALB hostname.**
-`LoadBalancerV2Origin` uses the load balancer's own DNS name, which won't match a
-certificate issued for `api.mountjoy.io`, and the origin handshake fails with a 502. Use
-`HttpOrigin(api_domain)`.
-
-**Don't use CloudFront error pages for SPA routing.** They apply to the whole
-distribution, so a 404 from the API comes back as `index.html` with a 200. There's a
-viewer-request function on the static behaviour instead.
-
-**Flutter doesn't hash `main.dart.js`.** A cached copy next to a fresh
-`flutter_bootstrap.js` gives you a blank page, so everything is published with
-`max-age=0, must-revalidate` and the cache is invalidated on deploy.
-
-**boto3 can't read `aws login` credentials without `botocore[crt]`,** and it fails at
-request time rather than import. That's what `requirements-dev.txt` is for. Fargate uses
-the task role, so it isn't needed in the image.

@@ -5,8 +5,9 @@
   "location": "Fletcher, North Carolina",
   "email": "ross.mountjoy.carr@pm.me",
   "links": {
-    "github": "https://github.com/rmountjoy92",
-    "linkedin": "https://www.linkedin.com/in/ross-mountjoy-a48a151b7/"
+    "GitHub (personal)": "https://github.com/rmountjoy92",
+    "GitHub (Mountjoy Software)": "https://github.com/Mountjoy-Software",
+    "LinkedIn": "https://www.linkedin.com/in/ross-mountjoy-a48a151b7/"
   },
   "summary": "Self-taught full-stack developer with over ten years of experience building and scaling web applications, from system architecture and backend APIs through frontend UI and the infrastructure underneath. The last few years have gone deep on AI integration: building against the Anthropic and OpenAI APIs, writing Claude Code extensions and MCP servers, wiring agents into real services through OpenAPI specs, and running local models with Ollama for private inference. Came into the field through personal projects and open source, including Home Assistant and DashMachine, which has passed 11 million Docker Hub pulls.",
   "skills": {
@@ -15,7 +16,8 @@
       "PHP",
       "JavaScript",
       "Dart",
-      "SQL"
+      "SQL",
+      "Bash"
     ],
     "backend": [
       "FastAPI",
@@ -25,24 +27,65 @@
       "SQLAlchemy",
       "Alembic",
       "Pydantic",
-      "MySQL"
+      "MySQL",
+      "REST APIs",
+      "Server-Sent Events"
     ],
     "frontend": [
       "Flutter",
       "Vue.js",
       "React",
-      "Riverpod",
-      "go_router"
+      "Riverpod"
+    ],
+    "AWS": [
+      "Amazon EC2",
+      "Amazon ECS",
+      "AWS Fargate",
+      "Amazon ECR",
+      "AWS Lambda",
+      "Amazon S3",
+      "Amazon CloudFront",
+      "Amazon Route 53",
+      "Application Load Balancer",
+      "Amazon VPC",
+      "AWS IAM",
+      "Amazon Cognito",
+      "AWS Certificate Manager",
+      "AWS Secrets Manager",
+      "AWS Systems Manager",
+      "Amazon DynamoDB",
+      "Amazon RDS",
+      "Amazon CloudWatch",
+      "AWS CloudTrail",
+      "AWS CloudFormation",
+      "AWS CDK",
+      "Amazon SQS",
+      "Amazon SNS",
+      "Amazon SES",
+      "Amazon EventBridge",
+      "AWS Auto Scaling",
+      "AWS WAF",
+      "Amazon API Gateway",
+      "Amazon Bedrock"
+    ],
+    "identity and auth": [
+      "SAML SSO",
+      "SAML identity provider",
+      "SAML service provider",
+      "OAuth 2.0",
+      "OpenID Connect"
     ],
     "infrastructure": [
-      "AWS ECS Fargate",
-      "AWS CDK",
-      "CloudFront",
-      "DynamoDB",
       "Docker",
+      "Docker Compose",
       "NGINX",
+      "Linux",
+      "Git",
       "GitHub Actions",
-      "CI/CD"
+      "Bitbucket",
+      "Bitbucket Pipelines",
+      "CI/CD",
+      "Jira"
     ],
     "llm": [
       "Anthropic Claude API",
@@ -53,9 +96,9 @@
       "tool use",
       "prompt caching",
       "RAG",
+      "embeddings",
       "Qdrant",
       "vector search",
-      "Amazon Bedrock embeddings",
       "Ollama"
     ],
     "design and marketing": [
@@ -75,7 +118,7 @@
       "end": "present",
       "highlights": [
         "Stayed on as an independent contractor after four years as a full-time employee; Savi is now the main client of Mountjoy Software Solutions.",
-        "Owns the AWS infrastructure.",
+        "Owns the AWS infrastructure and runs their SAML single sign-on service.",
         "AI engineering, including LLM integration and agent tooling."
       ],
       "stack": [
@@ -83,9 +126,30 @@
         "Laravel",
         "Python",
         "React",
-        "AWS ECS",
+        "JavaScript",
+        "MySQL",
+        "Amazon EC2",
+        "Amazon ECS",
+        "AWS Fargate",
+        "Amazon ECR",
+        "Application Load Balancer",
+        "Amazon VPC",
+        "AWS IAM",
+        "Amazon Cognito",
+        "Amazon S3",
+        "Amazon Route 53",
+        "Amazon CloudWatch",
+        "AWS Certificate Manager",
+        "SAML SSO",
+        "SAML identity provider",
+        "SAML service provider",
         "Docker",
-        "MySQL"
+        "Docker Compose",
+        "NGINX",
+        "Bitbucket",
+        "Bitbucket Pipelines",
+        "CI/CD",
+        "Jira"
       ]
     },
     {
@@ -96,19 +160,42 @@
       "end": "2026-08",
       "highlights": [
         "Migrated their entire stack off EC2 and onto ECS, containerising a legacy PHP application and modernising the stack around it.",
+        "Built a custom SAML identity provider and service provider platform to run single sign-on for their users.",
         "Replaced the DocuSign integration in the core application flow with an in-house PDF generation, signature and faxing system.",
-        "Built semantic search over the help centre articles behind the Savi Assistant, using embeddings and cosine similarity retrieval.",
+        "Wrote their Bitbucket Pipelines CI/CD, which builds and deploys the containerised stack.",
+        "Stood up Qdrant and built semantic search over the help centre articles behind the Savi Assistant, using embeddings and cosine similarity retrieval.",
         "Full-stack development across a PHP, Laravel, Python and React codebase.",
-        "Owned the AWS infrastructure."
+        "Owned the AWS infrastructure, including ECS, ALB, IAM, Cognito, S3 and Route 53."
       ],
       "stack": [
         "PHP",
         "Laravel",
         "Python",
         "React",
-        "AWS ECS",
+        "JavaScript",
+        "MySQL",
+        "Amazon EC2",
+        "Amazon ECS",
+        "AWS Fargate",
+        "Amazon ECR",
+        "Application Load Balancer",
+        "Amazon VPC",
+        "AWS IAM",
+        "Amazon Cognito",
+        "Amazon S3",
+        "Amazon Route 53",
+        "Amazon CloudWatch",
+        "AWS Certificate Manager",
+        "SAML SSO",
+        "SAML identity provider",
+        "SAML service provider",
         "Docker",
-        "MySQL"
+        "Docker Compose",
+        "NGINX",
+        "Bitbucket",
+        "Bitbucket Pipelines",
+        "CI/CD",
+        "Jira"
       ]
     },
     {
@@ -125,7 +212,13 @@
         "Python",
         "FastAPI",
         "Vue.js",
-        "AWS"
+        "JavaScript",
+        "MySQL",
+        "Amazon EC2",
+        "Amazon S3",
+        "Docker",
+        "Docker Compose",
+        "NGINX"
       ]
     },
     {
@@ -156,12 +249,17 @@
       "stack": [
         "Laravel",
         "PHP",
-        "Anthropic API",
+        "Anthropic Claude API",
         "Laravel AI SDK",
+        "Qdrant",
         "vector search",
+        "RAG",
+        "embeddings",
         "PDF chunking",
-        "SSE streaming",
-        "tool calling"
+        "Server-Sent Events",
+        "tool use",
+        "Docker",
+        "Docker Compose"
       ],
       "public": true,
       "url": "https://join.bysavi.com/assistant"
@@ -175,13 +273,15 @@
       "stack": [
         "FastAPI",
         "Flutter",
+        "Riverpod",
         "Ollama",
         "Qdrant",
         "MySQL",
         "SQLAlchemy",
         "Alembic",
         "Docker",
-        "Anthropic API",
+        "Docker Compose",
+        "Anthropic Claude API",
         "Kokoro-82M"
       ],
       "public": false
@@ -195,6 +295,8 @@
       "stack": [
         "Python",
         "OpenAI API",
+        "Docker",
+        "Docker Compose",
         "Raspberry Pi",
         "3D printing"
       ],
@@ -224,8 +326,10 @@
       "stack": [
         "Python",
         "Flask",
+        "JavaScript",
         "Docker",
-        "JavaScript"
+        "Docker Compose",
+        "NGINX"
       ],
       "public": true,
       "repo": "https://github.com/rmountjoy92/DashMachine",
@@ -257,7 +361,9 @@
       "stack": [
         "Python",
         "Flask",
-        "Anki Vector SDK"
+        "Anki Vector SDK",
+        "Docker",
+        "Docker Compose"
       ],
       "public": true,
       "repo": "https://github.com/rmountjoy92/VectorCloud"
@@ -270,12 +376,27 @@
       "details": "The diagram below is the whole thing. One CloudFront distribution fronts two origins: the default behaviour serves the Flutter bundle out of a private S3 bucket over Origin Access Control, and /api/* goes to an Application Load Balancer in front of a FastAPI task on ECS Fargate. Because both live behind the same distribution the browser is same-origin with the API, so there is no CORS anywhere. The load balancer's security group admits only CloudFront's origin-facing prefix list, which means api.mountjoy.io cannot be reached directly even though it has a public certificate.\n\nThe VPC has no NAT gateway. Tasks sit in public subnets with a public IP and reach S3 and DynamoDB over gateway endpoints, which costs nothing, rather than paying for a managed NAT to do the same work.\n\nAll of it is AWS CDK in Python, split into four stacks so the stateful pieces can carry termination protection and RETAIN policies while the compute and edge stacks stay disposable. GitHub Actions deploys on every push to main through OIDC federation, so there are no AWS keys stored anywhere in the repo or in GitHub. DynamoDB is a single table holding rate-limit counters keyed by a salted hash of the caller's IP, with a TTL so old rows expire themselves.\n\nThe assistant is Claude with a system prompt built from this same profile record. Portfolio content is embedded with Amazon Bedrock Titan and indexed in Qdrant, which both retrieves context for answers and drives the interactive graph you get from /projects. The system prompt is assembled once at import so the cached prefix stays byte-identical between requests and prompt caching actually hits; retrieved excerpts go into the user turn instead, where they cannot break the cache.\n\nSource is public.",
       "stack": [
         "Flutter",
+        "Riverpod",
         "FastAPI",
         "AWS CDK",
-        "ECS Fargate",
-        "CloudFront",
-        "DynamoDB",
-        "GitHub Actions"
+        "Amazon ECS",
+        "AWS Fargate",
+        "Amazon ECR",
+        "Amazon CloudFront",
+        "Amazon S3",
+        "Application Load Balancer",
+        "Amazon Route 53",
+        "Amazon VPC",
+        "AWS IAM",
+        "AWS Certificate Manager",
+        "AWS Secrets Manager",
+        "Amazon DynamoDB",
+        "Amazon Bedrock",
+        "Qdrant",
+        "Docker",
+        "Docker Compose",
+        "GitHub Actions",
+        "CI/CD"
       ],
       "public": true,
       "repo": "https://github.com/Mountjoy-Software/mss_portfolio",
