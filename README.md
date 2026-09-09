@@ -13,6 +13,10 @@ infrastructure is part of what it's meant to show.
 
 ## Infrastructure
 
+![Architecture](docs/architecture.png)
+
+Built in Eraser. `docs/architecture.eraser` has the same thing as DSL.
+
 ```
 mountjoy.io
     |

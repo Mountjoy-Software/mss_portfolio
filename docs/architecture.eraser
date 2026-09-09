@@ -1,8 +1,5 @@
 title Mountjoy Software Solutions — Portfolio Architecture
 
-// Paste into https://app.eraser.io as a Cloud Architecture Diagram.
-// Icon names may need adjusting in the editor; the structure is the point.
-
 Internet [icon: globe, color: grey] {
   End Users [icon: users, label: "End Users\nBrowser · Flutter web"]
   Route 53 [icon: aws-route53, color: purple, label: "Route 53\nmountjoy.io public zone\nA + AAAA alias records"]
@@ -49,7 +46,6 @@ AWS us-east-1 [icon: aws, color: blue] {
   }
 }
 
-// Request path
 End Users > Route 53: DNS
 Route 53 > CloudFront: alias
 CloudFront > S3: default behaviour, OAC signed
@@ -60,7 +56,6 @@ ACM > ALB
 CloudFront > ALB: /api/* via api.mountjoy.io, HTTPS_ONLY
 ALB > API: HTTP 8000, health /api/v1/health
 
-// Application dependencies
 API > DynamoDB: rate limit counters
 API > Secrets: injected at task start
 API > Bedrock: embed corpus and queries
@@ -69,7 +64,6 @@ API > Anthropic API: streamed chat with retrieved context
 API > Endpoints: S3 + DynamoDB traffic
 ECR > API: image pulled by task definition
 
-// Delivery
 GitHub > OIDC Role: AssumeRoleWithWebIdentity
 OIDC Role > ECR: build and push commit-tagged image
 OIDC Role > ECS: cdk deploy with image_tag
