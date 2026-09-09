@@ -24,7 +24,7 @@ class TerminalPage extends ConsumerStatefulWidget {
 }
 
 class _TerminalPageState extends ConsumerState<TerminalPage> {
-  final _input = GhostController();
+  final _input = TextEditingController();
   final _focus = FocusNode();
   late final ScrollController _scroll;
 
@@ -71,7 +71,6 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
   void _onTextChanged() {
     if (_input.text == _lastText) return;
     _lastText = _input.text;
-    _input.ghost = suggestionFor(_input.text);
     setState(() {
       if (_suppressMenuReset) return;
       _menu = matchingCommands(_input.text);
@@ -102,12 +101,12 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
     _prefill(matches[next]);
   }
 
-  void _accept(String ghost) {
-    final full = _input.text + ghost;
+  void _accept(String suggestion) {
     _input.value = TextEditingValue(
-      text: full,
-      selection: TextSelection.collapsed(offset: full.length),
+      text: suggestion,
+      selection: TextSelection.collapsed(offset: suggestion.length),
     );
+    _focus.requestFocus();
   }
 
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
@@ -134,13 +133,11 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
       }
     }
 
-    if (_input.ghost.isNotEmpty) {
-      final selection = _input.selection;
-      final atEnd =
-          selection.isCollapsed && selection.baseOffset == _input.text.length;
+    final suggestion = ref.read(chatControllerProvider).suggestion;
+    if (suggestion != null && _input.text.isEmpty) {
       if (key == LogicalKeyboardKey.tab ||
-          (key == LogicalKeyboardKey.arrowRight && atEnd)) {
-        _accept(_input.ghost);
+          key == LogicalKeyboardKey.arrowRight) {
+        _accept(suggestion);
         return KeyEventResult.handled;
       }
     }
@@ -309,7 +306,7 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
                       focusNode: _focus,
                       streaming: state.streaming,
                       menuOpen: matches.isNotEmpty,
-                      suggesting: _input.ghost.isNotEmpty,
+                      suggestion: _input.text.isEmpty ? state.suggestion : null,
                       onKey: _onKey,
                       usage: state.usage,
                     ),

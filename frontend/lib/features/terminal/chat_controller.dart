@@ -9,25 +9,30 @@ class ChatState {
     this.streaming = false,
     this.toolActivity,
     this.usage,
+    this.suggestion,
   });
 
   final List<ChatTurn> turns;
   final bool streaming;
   final String? toolActivity;
   final Map<String, dynamic>? usage;
+  final String? suggestion;
 
   ChatState copyWith({
     List<ChatTurn>? turns,
     bool? streaming,
     String? toolActivity,
     Map<String, dynamic>? usage,
+    String? suggestion,
     bool clearTool = false,
+    bool clearSuggestion = false,
   }) {
     return ChatState(
       turns: turns ?? this.turns,
       streaming: streaming ?? this.streaming,
       toolActivity: clearTool ? null : (toolActivity ?? this.toolActivity),
       usage: usage ?? this.usage,
+      suggestion: clearSuggestion ? null : (suggestion ?? this.suggestion),
     );
   }
 }
@@ -74,6 +79,7 @@ class ChatController extends Notifier<ChatState> {
       turns: [...turns, pending],
       streaming: true,
       clearTool: true,
+      clearSuggestion: true,
     );
 
     try {
@@ -86,7 +92,11 @@ class ChatController extends Notifier<ChatState> {
           case ChatEventKind.tool:
             state = state.copyWith(toolActivity: event.toolName);
           case ChatEventKind.done:
-            state = state.copyWith(usage: event.usage, clearTool: true);
+            state = state.copyWith(
+              usage: event.usage,
+              suggestion: event.usage?['suggest'] as String?,
+              clearTool: true,
+            );
           case ChatEventKind.error:
             pending.content = event.text;
             state = state.copyWith(turns: [...state.turns], clearTool: true);

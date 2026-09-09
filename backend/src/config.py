@@ -10,6 +10,7 @@ class Settings(BaseSettings):
 
     ANTHROPIC_API_KEY: str = ""
     CHAT_MODEL: str = "claude-sonnet-5"
+    SUGGEST_MODEL: str = "claude-haiku-4-5-20251001"
     CHAT_MAX_TOKENS: int = 8000
 
     QDRANT_URL: str = "http://localhost:6333"

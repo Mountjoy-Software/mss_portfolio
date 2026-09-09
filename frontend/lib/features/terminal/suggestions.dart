@@ -25,15 +25,3 @@ List<String> randomPrompts(int count) {
   final pool = List<String>.of(suggestedPrompts)..shuffle(Random());
   return pool.take(count).toList();
 }
-
-String suggestionFor(String typed) {
-  if (typed.isEmpty || typed.startsWith('/')) return '';
-  final lower = typed.toLowerCase();
-  for (final prompt in suggestedPrompts) {
-    if (prompt.length > typed.length &&
-        prompt.toLowerCase().startsWith(lower)) {
-      return prompt.substring(typed.length);
-    }
-  }
-  return '';
-}

@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 from typing import AsyncIterator
@@ -45,7 +46,7 @@ def _system_prompt() -> str:
     projects = "\n".join(
         f"- {x['name']}, started {x['year']} "
         f"(slug {x['slug']}, write-up at /deck/{x['slug']}). {x['blurb']}"
-        for x in p["projects"]
+        for x in sorted(p["projects"], key=lambda x: x["year"])
     )
     experience = "\n".join(
         f"- {e['role']} at "
@@ -94,10 +95,30 @@ excerpts. One or two images is plenty.
 {experience}
 
 # Projects
+Oldest first.
+
 {projects}"""
 
 
+def _follow_up_system() -> str:
+    p = profile()
+    projects = ", ".join(x["name"] for x in p["projects"])
+    companies = ", ".join(e["company"] for e in p["experience"])
+    return f"""A visitor to {p['name']}'s consulting portfolio just asked a question.
+Write the one question they are most likely to want to ask next.
+
+The site can answer questions about his roles ({companies}), his projects
+({projects}), his skills across AWS infrastructure, Python, FastAPI, Flutter,
+LLM integration and vector search, where he is based, and how to hire him. Stay
+inside that ground, and move to a different angle than the one just asked rather
+than rephrasing it.
+
+Write it in the visitor's voice, about Ross in the third person, at most 60
+characters. Output the question alone, with no quotes and nothing else."""
+
+
 SYSTEM_PROMPT = _system_prompt()
+FOLLOW_UP_SYSTEM = _follow_up_system()
 
 
 def client() -> AsyncAnthropic:
@@ -105,6 +126,24 @@ def client() -> AsyncAnthropic:
     if _client is None:
         _client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
     return _client
+
+
+async def _follow_up(question: str) -> str | None:
+    try:
+        reply = await client().messages.create(
+            model=settings.SUGGEST_MODEL,
+            max_tokens=64,
+            system=FOLLOW_UP_SYSTEM,
+            messages=[{"role": "user", "content": question}],
+        )
+    except Exception:
+        log.warning("follow-up suggestion failed", exc_info=True)
+        return None
+    text = "".join(
+        block.text for block in reply.content if block.type == "text"
+    ).strip()
+    text = text.splitlines()[0].strip().strip('"') if text else ""
+    return text if 0 < len(text) <= 100 else None
 
 
 def _run_tool(name: str, args: dict) -> str:
@@ -152,8 +191,14 @@ def _with_context(history: list[dict], retrieved: list[dict]) -> list[dict]:
 async def stream_reply(
     history: list[dict], retrieved: list[dict] | None = None
 ) -> AsyncIterator[str]:
+    asked = history[-1].get("content") if history else None
+    suggestion = (
+        asyncio.create_task(_follow_up(asked)) if isinstance(asked, str) else None
+    )
     try:
-        async for frame in _stream_turns(_with_context(history, retrieved or [])):
+        async for frame in _stream_turns(
+            _with_context(history, retrieved or []), suggestion
+        ):
             yield frame
     except RateLimitError:
         log.warning("anthropic rate limited the chat request")
@@ -164,9 +209,14 @@ async def stream_reply(
     except Exception:
         log.exception("chat stream failed")
         yield _sse("error", message="Something went wrong answering that.")
+    finally:
+        if suggestion is not None and not suggestion.done():
+            suggestion.cancel()
 
 
-async def _stream_turns(history: list[dict]) -> AsyncIterator[str]:
+async def _stream_turns(
+    history: list[dict], suggestion: asyncio.Task | None
+) -> AsyncIterator[str]:
     messages = list(history)
 
     while True:
@@ -201,6 +251,7 @@ async def _stream_turns(history: list[dict]) -> AsyncIterator[str]:
                 cache_read=usage.cache_read_input_tokens or 0,
                 input_tokens=usage.input_tokens,
                 output_tokens=usage.output_tokens,
+                suggest=await suggestion if suggestion is not None else None,
             )
             return
 

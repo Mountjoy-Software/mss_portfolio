@@ -1,44 +1,12 @@
 import 'package:flutter/material.dart';
 
-class GhostController extends TextEditingController {
-  String ghost = '';
-
-  @override
-  TextSpan buildTextSpan({
-    required BuildContext context,
-    TextStyle? style,
-    required bool withComposing,
-  }) {
-    final typed = super.buildTextSpan(
-      context: context,
-      style: style,
-      withComposing: withComposing,
-    );
-    if (ghost.isEmpty) return typed;
-    return TextSpan(
-      style: style,
-      children: [
-        typed,
-        TextSpan(
-          text: ghost,
-          style: style?.copyWith(
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurfaceVariant.withValues(alpha: 0.55),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class PromptBar extends StatelessWidget {
   const PromptBar({
     required this.controller,
     required this.focusNode,
     required this.streaming,
     required this.menuOpen,
-    required this.suggesting,
+    required this.suggestion,
     required this.onKey,
     this.usage,
     super.key,
@@ -48,7 +16,7 @@ class PromptBar extends StatelessWidget {
   final FocusNode focusNode;
   final bool streaming;
   final bool menuOpen;
-  final bool suggesting;
+  final String? suggestion;
   final KeyEventResult Function(FocusNode, KeyEvent) onKey;
   final Map<String, dynamic>? usage;
 
@@ -112,7 +80,7 @@ class PromptBar extends StatelessWidget {
                       decoration: InputDecoration(
                         isDense: true,
                         filled: false,
-                        hintText: 'Ask about my work',
+                        hintText: suggestion ?? 'Ask about my work',
                         hintStyle: promptStyle?.copyWith(
                           color: colorScheme.onSurfaceVariant.withValues(
                             alpha: 0.6,
@@ -140,8 +108,8 @@ class PromptBar extends StatelessWidget {
                       ? 'working...'
                       : menuOpen
                       ? 'up/down to choose    enter to run    esc to dismiss'
-                      : suggesting
-                      ? 'tab or right arrow to accept'
+                      : suggestion != null
+                      ? 'tab or right arrow to take the suggestion'
                       : "Type '/help' for a list of commands.",
                   style: hintStyle,
                 ),
