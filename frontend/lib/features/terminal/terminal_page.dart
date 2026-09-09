@@ -25,7 +25,8 @@ class TerminalPage extends ConsumerStatefulWidget {
   ConsumerState<TerminalPage> createState() => _TerminalPageState();
 }
 
-class _TerminalPageState extends ConsumerState<TerminalPage> {
+class _TerminalPageState extends ConsumerState<TerminalPage>
+    with WidgetsBindingObserver {
   final _input = TextEditingController();
   final _focus = FocusNode();
   late final ScrollController _scroll;
@@ -43,6 +44,7 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _input.addListener(_onTextChanged);
     _bubbles = randomPrompts(4);
     final state = ref.read(chatControllerProvider);
@@ -54,7 +56,13 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
   }
 
   @override
+  void didChangeMetrics() {
+    if (_pinned) _stickToEnd();
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _input.removeListener(_onTextChanged);
     _input.dispose();
     _focus.dispose();
