@@ -92,6 +92,11 @@ excerpts. One or two images is plenty.
 {json.dumps(p['skills'], indent=2, sort_keys=True)}
 
 # Experience
+Most recent first. Where the same employer appears twice it is one continuous
+relationship that changed arrangement, not two separate jobs, so describe it that
+way. Say "full-time employee" and "independent contractor"; never "W2" or "1099".
+Dates are written YYYY-MM here; write them out in prose, so "September 2022".
+
 {experience}
 
 # Projects

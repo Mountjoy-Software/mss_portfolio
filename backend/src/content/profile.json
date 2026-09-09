@@ -70,17 +70,36 @@
     {
       "company": "Savi",
       "url": "https://www.bysavi.com",
-      "role": "Software Engineer, contract",
-      "start": "2022-09",
+      "role": "Software engineer, independent contractor",
+      "start": "2026-08",
       "end": "present",
       "highlights": [
-        "Moved from full-time employee to 1099 contractor in August 2026; Savi is now the main client of Mountjoy Software Solutions.",
+        "Stayed on as an independent contractor after four years as a full-time employee; Savi is now the main client of Mountjoy Software Solutions.",
+        "Owns the AWS infrastructure.",
+        "AI engineering, including LLM integration and agent tooling."
+      ],
+      "stack": [
+        "PHP",
+        "Laravel",
+        "Python",
+        "React",
+        "AWS ECS",
+        "Docker",
+        "MySQL"
+      ]
+    },
+    {
+      "company": "Savi",
+      "url": "https://www.bysavi.com",
+      "role": "Software engineer, full-time employee",
+      "start": "2022-09",
+      "end": "2026-08",
+      "highlights": [
         "Migrated their entire stack off EC2 and onto ECS, containerising a legacy PHP application and modernising the stack around it.",
         "Replaced the DocuSign integration in the core application flow with an in-house PDF generation, signature and faxing system.",
         "Built semantic search over the help centre articles behind the Savi Assistant, using embeddings and cosine similarity retrieval.",
         "Full-stack development across a PHP, Laravel, Python and React codebase.",
-        "Owns the AWS infrastructure.",
-        "AI engineering, including LLM integration and agent tooling."
+        "Owned the AWS infrastructure."
       ],
       "stack": [
         "PHP",
