@@ -67,6 +67,7 @@
       "end": "present",
       "highlights": [
         "Moved from full-time employee to 1099 contractor in August 2026; Savi is now the main client of Mountjoy Software Solutions.",
+        "Migrated their entire stack off EC2 and onto ECS, containerising a legacy PHP application and modernising the stack around it.",
         "Built semantic search over the help centre articles behind the Savi Assistant, using embeddings and cosine similarity retrieval.",
         "Full-stack development across a PHP, Laravel, Python and React codebase.",
         "Owns the AWS infrastructure.",
@@ -77,7 +78,8 @@
         "Laravel",
         "Python",
         "React",
-        "AWS",
+        "AWS ECS",
+        "Docker",
         "MySQL"
       ]
     },

@@ -29,6 +29,8 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
 
   int _selected = 0;
   bool _dismissed = false;
+  bool _suppressMenuReset = false;
+  List<SlashCommand> _menu = const [];
   String _lastText = '';
 
   @override
@@ -49,21 +51,32 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
   void _onTextChanged() {
     if (_input.text == _lastText) return;
     _lastText = _input.text;
+    if (_suppressMenuReset) return;
     setState(() {
+      _menu = matchingCommands(_input.text);
       _selected = 0;
       _dismissed = false;
     });
   }
 
-  List<SlashCommand> get _matches =>
-      _dismissed ? const [] : matchingCommands(_input.text);
+  List<SlashCommand> get _matches => _dismissed ? const [] : _menu;
 
   void _prefill(SlashCommand command) {
+    _suppressMenuReset = true;
     _input.value = TextEditingValue(
       text: command.prefill,
       selection: TextSelection.collapsed(offset: command.prefill.length),
     );
+    _suppressMenuReset = false;
     _focus.requestFocus();
+  }
+
+  void _move(int delta) {
+    final matches = _matches;
+    if (matches.isEmpty) return;
+    final next = (_selected + delta + matches.length) % matches.length;
+    setState(() => _selected = next);
+    _prefill(matches[next]);
   }
 
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
@@ -73,13 +86,11 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
 
     if (matches.isNotEmpty) {
       if (key == LogicalKeyboardKey.arrowDown) {
-        setState(() => _selected = (_selected + 1) % matches.length);
+        _move(1);
         return KeyEventResult.handled;
       }
       if (key == LogicalKeyboardKey.arrowUp) {
-        setState(
-          () => _selected = (_selected - 1 + matches.length) % matches.length,
-        );
+        _move(-1);
         return KeyEventResult.handled;
       }
       if (key == LogicalKeyboardKey.escape) {
@@ -94,13 +105,6 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
 
     if (key == LogicalKeyboardKey.enter &&
         !HardwareKeyboard.instance.isShiftPressed) {
-      if (matches.isNotEmpty) {
-        final chosen = matches[_selected.clamp(0, matches.length - 1)];
-        if (commandToken(_input.text) != chosen.name) {
-          _prefill(chosen);
-          return KeyEventResult.handled;
-        }
-      }
       _send(_input.text);
       return KeyEventResult.handled;
     }

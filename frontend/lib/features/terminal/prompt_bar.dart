@@ -105,7 +105,7 @@ class PromptBar extends StatelessWidget {
                   streaming
                       ? 'working...'
                       : menuOpen
-                      ? 'up/down to choose    enter or tab to fill    esc to dismiss'
+                      ? 'up/down to choose    enter to run    esc to dismiss'
                       : "Type '/help' for a list of commands.",
                   style: hintStyle,
                 ),

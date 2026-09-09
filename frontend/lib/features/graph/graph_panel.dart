@@ -555,16 +555,51 @@ class _GraphPainter extends CustomPainter {
     canvas.restore();
   }
 
+  TextPainter _wrapped(
+    String text,
+    Color colour,
+    double maxWidth,
+    double fontSize,
+    FontWeight weight,
+  ) {
+    final key =
+        '$text|${colour.toARGB32()}|$maxWidth|$fontSize|${weight.value}';
+    return _labels.putIfAbsent(key, () {
+      final painter = TextPainter(
+        text: TextSpan(
+          text: text,
+          style: TextStyle(
+            color: colour,
+            fontSize: fontSize,
+            height: 1.35,
+            fontWeight: weight,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+        maxLines: 6,
+        ellipsis: '…',
+      )..layout(maxWidth: maxWidth);
+      return painter;
+    });
+  }
+
   void _tooltip(Canvas canvas, Size size, _Body body) {
-    final title = _labelFor(body.node.title, label);
+    const padding = 10.0;
+    final maxTextWidth = min(300.0, max(120.0, size.width - 60));
+    final title = _wrapped(
+      body.node.title,
+      label,
+      maxTextWidth,
+      12.5,
+      FontWeight.w600,
+    );
     final detail = body.node.score != null && body.node.score! > 0
         ? '${body.node.kind}  ·  ${body.node.score!.toStringAsFixed(3)}'
         : body.node.kind;
-    final subtitle = _labelFor(detail, muted);
+    final subtitle = _wrapped(detail, muted, maxTextWidth, 11, FontWeight.w400);
 
-    const padding = 8.0;
     final width = max(title.width, subtitle.width) + padding * 2;
-    final height = title.height + subtitle.height + padding * 2 + 2;
+    final height = title.height + subtitle.height + padding * 2 + 4;
 
     var left = body.x + body.radius + 10;
     var top = body.y - height / 2;
@@ -589,7 +624,7 @@ class _GraphPainter extends CustomPainter {
     title.paint(canvas, Offset(left + padding, top + padding));
     subtitle.paint(
       canvas,
-      Offset(left + padding, top + padding + title.height + 2),
+      Offset(left + padding, top + padding + title.height + 4),
     );
   }
 
