@@ -110,10 +110,11 @@ class StreamingMarkdown extends StatelessWidget {
         launchUrl(Uri.parse(href));
       },
     );
-    if (!isStreaming) return markdown;
     return ShaderMask(
       shaderCallback: (bounds) {
-        final fadeStart = (1 - _fadeHeight / bounds.height).clamp(0.0, 1.0);
+        final fadeStart = isStreaming
+            ? (1 - _fadeHeight / bounds.height).clamp(0.0, 1.0)
+            : 1.0;
         return LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,

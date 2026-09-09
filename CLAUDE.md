@@ -87,6 +87,19 @@ and they expire. A long-running compose session eventually fails embedding calls
 Retrieval and the index build both degrade rather than fail when that happens, so the
 symptom is a graph 503 and answers without retrieved context, not an outage.
 
+`ChatTurn` is mutable and the same instance is shared across successive `ChatState`
+values, because streaming appends to `pending.content` in place. `ref.listen`'s
+`previous` and `next` therefore read the same object, so diffing them for new tokens
+always compares equal. `terminal_page.dart` caches turn count and tail length in the
+State and diffs against those instead.
+
+`StreamingMarkdown` must keep the same widget tree shape whether or not it is
+streaming. Returning the bare `MarkdownBody` when the stream ends, instead of leaving
+it wrapped, changes the widget type at that position, so Flutter unmounts the whole
+subtree and rebuilds it. Images reload through their `loadingBuilder` placeholder, the
+entry's height changes, and the transcript appears to jump to a random place. The
+`ShaderMask` stays put and its gradient goes opaque instead.
+
 ## Anthropic API
 
 Model is `claude-sonnet-5`, set in `backend/src/config.py`. The system prompt is built

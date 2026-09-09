@@ -100,9 +100,23 @@ class ChatController extends Notifier<ChatState> {
     }
   }
 
-  void reset() => state = const ChatState();
+  void reset() {
+    state = const ChatState();
+    ref.read(transcriptOffsetProvider.notifier).save(0);
+  }
 }
 
 final chatControllerProvider = NotifierProvider<ChatController, ChatState>(
   ChatController.new,
+);
+
+class TranscriptOffset extends Notifier<double> {
+  @override
+  double build() => 0;
+
+  void save(double value) => state = value;
+}
+
+final transcriptOffsetProvider = NotifierProvider<TranscriptOffset, double>(
+  TranscriptOffset.new,
 );

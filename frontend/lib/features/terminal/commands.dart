@@ -16,6 +16,7 @@ const slashCommands = [
   SlashCommand('/projects', 'What Ross has built, and the stack behind each'),
   SlashCommand('/experience', 'Where he has worked and what shipped'),
   SlashCommand('/skills', 'Languages, frameworks and infrastructure'),
+  SlashCommand('/architecture', 'The AWS diagram behind this site'),
   SlashCommand('/contact', 'How to get in touch'),
   SlashCommand('/clear', 'Clear the transcript and start over'),
   SlashCommand(
@@ -59,8 +60,24 @@ does not cover something it will say so rather than guess.
 ''';
 }
 
+String architectureReply() {
+  return '''
+![Production architecture for mountjoy.io](/media/mss-portfolio/architecture.png)
 
+One CloudFront distribution fronts both origins: `/*` goes to a private S3 bucket
+holding the Flutter bundle, `/api/*` goes to an ALB in front of a FastAPI task on
+ECS Fargate. Same-origin, so no CORS. The load balancer's security group only
+admits CloudFront's origin-facing prefix list, so the API cannot be reached
+directly.
 
+Everything is CDK in Python across four stacks, deployed by GitHub Actions through
+OIDC with no stored AWS keys. Portfolio content is embedded with Bedrock Titan and
+indexed in Qdrant, which grounds this assistant and drives the graph you get from
+`/projects`.
+
+Full write-up in [this site's deck](/deck/mss-portfolio).
+''';
+}
 
 String contactReply(Profile profile) {
   final links = profile.links.entries

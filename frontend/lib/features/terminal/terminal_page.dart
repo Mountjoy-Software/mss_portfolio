@@ -25,18 +25,27 @@ class TerminalPage extends ConsumerStatefulWidget {
 class _TerminalPageState extends ConsumerState<TerminalPage> {
   final _input = TextEditingController();
   final _focus = FocusNode();
-  final _scroll = ScrollController();
+  late final ScrollController _scroll;
 
   int _selected = 0;
   bool _dismissed = false;
   bool _suppressMenuReset = false;
   List<SlashCommand> _menu = const [];
   String _lastText = '';
+  bool _pinned = true;
+  int _turnCount = 0;
+  int _tailLength = 0;
 
   @override
   void initState() {
     super.initState();
     _input.addListener(_onTextChanged);
+    final state = ref.read(chatControllerProvider);
+    _turnCount = state.turns.length;
+    _tailLength = state.turns.isEmpty ? 0 : state.turns.last.content.length;
+    _scroll = ScrollController(
+      initialScrollOffset: ref.read(transcriptOffsetProvider),
+    )..addListener(_onScroll);
   }
 
   @override
@@ -44,8 +53,16 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
     _input.removeListener(_onTextChanged);
     _input.dispose();
     _focus.dispose();
+    _scroll.removeListener(_onScroll);
     _scroll.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scroll.hasClients) return;
+    final position = _scroll.position;
+    _pinned = position.pixels >= position.maxScrollExtent - 32;
+    ref.read(transcriptOffsetProvider.notifier).save(position.pixels);
   }
 
   void _onTextChanged() {
@@ -146,6 +163,7 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
     final token = commandToken(input);
     if (token == '/help') return helpReply();
     if (token == '/set-theme') return _applyTheme(commandArgument(input));
+    if (token == '/architecture') return architectureReply();
 
     final profile = ref.read(profileProvider).value;
     if (token == '/contact') {
@@ -184,13 +202,17 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(chatControllerProvider, (previous, next) {
-      final grew = next.turns.length != (previous?.turns.length ?? 0);
-      final tokenArrived =
-          next.turns.isNotEmpty &&
-          previous?.turns.isNotEmpty == true &&
-          next.turns.last.content.length != previous!.turns.last.content.length;
-      if (grew || tokenArrived) _stickToEnd();
+    ref.listen(chatControllerProvider, (_, next) {
+      final turnCount = next.turns.length;
+      final tailLength = next.turns.isEmpty
+          ? 0
+          : next.turns.last.content.length;
+      if (turnCount == _turnCount && tailLength == _tailLength) return;
+      final submitted = turnCount != _turnCount;
+      _turnCount = turnCount;
+      _tailLength = tailLength;
+      if (submitted) _pinned = true;
+      if (_pinned) _stickToEnd();
     });
     final state = ref.watch(chatControllerProvider);
     final awaiting =

@@ -260,7 +260,11 @@ class _GraphPanelState extends ConsumerState<GraphPanel>
           'similarity between them. Expanding ${widget.seed} runs a vector search '
           'filtered to that kind, and expanding anything else searches the whole '
           'collection for nearest neighbours. Hover a point to see it, drag to '
-          'rearrange.',
+          'rearrange.\n\n'
+          'This collection is also how the assistant on this site knows anything. '
+          'Each question is embedded the same way and the closest points are '
+          'retrieved and handed to Claude as context, so it can talk about '
+          'anything in here naturally instead of being limited to a fixed script.',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
             fontSize: 11,
             height: 1.5,
@@ -707,8 +711,7 @@ class _Inspector extends StatelessWidget {
                 child: MouseRegion(
                   cursor: SystemMouseCursors.click,
                   child: GestureDetector(
-                    onTap: () =>
-                        context.go('${current.payload['deck']}'),
+                    onTap: () => context.go('${current.payload['deck']}'),
                     child: Text(
                       'open the full write-up >',
                       style: mono?.copyWith(

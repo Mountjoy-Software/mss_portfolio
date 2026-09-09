@@ -10,8 +10,7 @@ import 'theme/app_theme.dart';
 void main() {
   usePathUrlStrategy();
   ErrorWidget.builder = (details) => const FatalErrorPage(
-    detail:
-        'Part of the page failed to render. Reloading usually clears it.',
+    detail: 'Part of the page failed to render. Reloading usually clears it.',
   );
   runApp(const ProviderScope(child: PortfolioApp()));
 }
