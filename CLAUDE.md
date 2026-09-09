@@ -74,6 +74,12 @@ from the record, then renders one page with reportlab. Role ids, project slugs a
 names that do not match `profile.json` are dropped in `_reconcile`, so the prose is the
 model's and the facts are the record's.
 
+The reader is whatever the visitor typed: a name, a role, a relationship, a pasted job
+posting. The synthesis resolves that into `reader`, a short phrase addressed to the
+person rather than an echo of the sentence, and the page, the footer and the filename
+all use it. The URL keeps the original text, because that is the cache key and what a
+re-render reads. Long input is truncated in `normalize`, never rejected.
+
 `POST /api/v1/resume` synthesizes and caches, `GET /api/v1/resume.pdf?for=...` renders
 and synthesizes on a miss. The cache is in process, so another task just synthesizes
 again.

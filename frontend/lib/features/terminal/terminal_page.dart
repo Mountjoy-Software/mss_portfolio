@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_client.dart';
 import '../../core/backdrop.dart';
+import '../../core/layout.dart';
 import '../../core/preferences.dart';
 import 'chat_controller.dart';
 import 'commands.dart';
@@ -254,6 +255,13 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
         state.turns.last.content.isEmpty;
     final showBackdrop = state.turns.isEmpty || awaiting;
     final matches = _matches;
+    final compact = isCompact(context);
+    final showBubbles =
+        state.turns.isEmpty &&
+        matches.isEmpty &&
+        _input.text.isEmpty &&
+        !(compact && keyboardOpen(context));
+    final suggestion = _input.text.isEmpty ? state.suggestion : null;
 
     return Scaffold(
       body: SafeArea(
@@ -307,17 +315,18 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (state.turns.isEmpty &&
-                        matches.isEmpty &&
-                        _input.text.isEmpty)
+                    if (showBubbles)
                       PromptSuggestions(prompts: _bubbles, onPick: _send),
                     PromptBar(
                       controller: _input,
                       focusNode: _focus,
                       streaming: state.streaming,
                       menuOpen: matches.isNotEmpty,
-                      suggestion: _input.text.isEmpty ? state.suggestion : null,
+                      suggestion: suggestion,
                       onKey: _onKey,
+                      onAcceptSuggestion: suggestion == null
+                          ? null
+                          : () => _accept(suggestion),
                       usage: state.usage,
                     ),
                   ],
@@ -342,7 +351,9 @@ class _Column extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: _columnWidth),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: EdgeInsets.symmetric(
+            horizontal: isCompact(context) ? 16 : 20,
+          ),
           child: child,
         ),
       ),
@@ -358,41 +369,49 @@ class _Hero extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final profile = ref.watch(profileProvider).value;
+    final compact = isCompact(context);
 
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Image.asset('assets/logo/mss_logo.png', height: 96),
-          const SizedBox(height: 24),
-          Text(
-            profile?.business ?? _business,
-            textAlign: TextAlign.center,
-            style: textTheme.titleLarge?.copyWith(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: colorScheme.onSurface,
-            ),
+    final hero = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Image.asset('assets/logo/mss_logo.png', height: compact ? 80 : 96),
+        const SizedBox(height: 24),
+        Text(
+          profile?.business ?? _business,
+          textAlign: TextAlign.center,
+          style: textTheme.titleLarge?.copyWith(
+            fontSize: compact ? 18 : 20,
+            fontWeight: FontWeight.w700,
+            color: colorScheme.onSurface,
           ),
-          const SizedBox(height: 6),
-          Text(
-            profile?.name ?? _name,
-            textAlign: TextAlign.center,
-            style: textTheme.bodyMedium?.copyWith(
-              fontSize: 15,
-              color: colorScheme.primary,
-            ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          profile?.name ?? _name,
+          textAlign: TextAlign.center,
+          style: textTheme.bodyMedium?.copyWith(
+            fontSize: 15,
+            color: colorScheme.primary,
           ),
-          const SizedBox(height: 6),
-          Text(
-            profile?.tagline ?? _tagline,
-            textAlign: TextAlign.center,
-            style: textTheme.bodyMedium?.copyWith(
-              fontSize: 14,
-              color: colorScheme.onSurfaceVariant,
-            ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          profile?.tagline ?? _tagline,
+          textAlign: TextAlign.center,
+          style: textTheme.bodyMedium?.copyWith(
+            fontSize: 14,
+            color: colorScheme.onSurfaceVariant,
           ),
-        ],
+        ),
+      ],
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Center(child: hero),
+        ),
       ),
     );
   }

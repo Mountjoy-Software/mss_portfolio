@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:fetch_client/fetch_client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
+import 'http_client.dart';
 import 'models.dart';
 
 const _apiBaseOverride = String.fromEnvironment('API_BASE');
@@ -12,7 +12,7 @@ const _apiBaseOverride = String.fromEnvironment('API_BASE');
 class ApiClient {
   http.Client? _cached;
 
-  http.Client get _client => _cached ??= FetchClient(mode: RequestMode.cors);
+  http.Client get _client => _cached ??= createHttpClient();
 
   static String get baseUrl =>
       _apiBaseOverride.isNotEmpty ? _apiBaseOverride : Uri.base.origin;

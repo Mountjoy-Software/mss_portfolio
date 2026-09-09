@@ -1,11 +1,13 @@
 import 'dart:math';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_client.dart';
+import '../../core/layout.dart';
 import '../../core/models.dart';
 
 const _repulsion = 26000.0;
@@ -16,6 +18,7 @@ const _centering = 0.012;
 const _minSeparation = 40.0;
 const _maxSpeed = 14.0;
 const _panelHeight = 460.0;
+const _compactPanelHeight = 600.0;
 const _hop = 115.0;
 
 const _kindLabels = {'skill_group': 'skill group'};
@@ -318,6 +321,38 @@ class _GraphPanelState extends ConsumerState<GraphPanel>
     return found;
   }
 
+  void _onTapUp(TapUpDetails details) {
+    final body = _hit(details.localPosition);
+    if (body == null) return;
+    setState(() => _selected = body.node.id);
+    _expand(body.node.id);
+  }
+
+  void _onDragStart(DragStartDetails details) {
+    final body = _hit(details.localPosition);
+    if (body == null) return;
+    body.pinned = true;
+    setState(() {
+      _dragging = body.node.id;
+      _selected = body.node.id;
+    });
+  }
+
+  void _onDragUpdate(DragUpdateDetails details) {
+    final body = _dragging == null ? null : _bodies[_dragging];
+    if (body == null) return;
+    final world = _toWorld(details.localPosition);
+    body.x = world.dx;
+    body.y = world.dy;
+    _repaint.value++;
+  }
+
+  void _onDragEnd(DragEndDetails _) {
+    final body = _dragging == null ? null : _bodies[_dragging];
+    body?.pinned = false;
+    setState(() => _dragging = null);
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -351,8 +386,9 @@ class _GraphPanelState extends ConsumerState<GraphPanel>
   }
 
   Widget _panel(ColorScheme colorScheme) {
+    final height = isCompact(context) ? _compactPanelHeight : _panelHeight;
     return Container(
-      height: _panelHeight,
+      height: height,
       decoration: BoxDecoration(
         border: Border.all(
           color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
@@ -397,7 +433,7 @@ class _GraphPanelState extends ConsumerState<GraphPanel>
                 )
               : Column(
                   children: [
-                    SizedBox(height: _panelHeight * 0.58, child: _canvas()),
+                    SizedBox(height: height * 0.55, child: _canvas()),
                     Divider(
                       height: 1,
                       color: colorScheme.onSurfaceVariant.withValues(
@@ -465,35 +501,24 @@ class _GraphPanelState extends ConsumerState<GraphPanel>
           onExit: (_) {
             if (_hovered != null) setState(() => _hovered = null);
           },
-          child: GestureDetector(
+          child: RawGestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTapUp: (details) {
-              final body = _hit(details.localPosition);
-              if (body == null) return;
-              setState(() => _selected = body.node.id);
-              _expand(body.node.id);
-            },
-            onPanStart: (details) {
-              final body = _hit(details.localPosition);
-              if (body == null) return;
-              body.pinned = true;
-              setState(() {
-                _dragging = body.node.id;
-                _selected = body.node.id;
-              });
-            },
-            onPanUpdate: (details) {
-              final body = _dragging == null ? null : _bodies[_dragging];
-              if (body == null) return;
-              final world = _toWorld(details.localPosition);
-              body.x = world.dx;
-              body.y = world.dy;
-              _repaint.value++;
-            },
-            onPanEnd: (_) {
-              final body = _dragging == null ? null : _bodies[_dragging];
-              body?.pinned = false;
-              setState(() => _dragging = null);
+            gestures: {
+              TapGestureRecognizer:
+                  GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
+                    TapGestureRecognizer.new,
+                    (recognizer) => recognizer.onTapUp = _onTapUp,
+                  ),
+              _NodeDragRecognizer:
+                  GestureRecognizerFactoryWithHandlers<_NodeDragRecognizer>(
+                    () => _NodeDragRecognizer(
+                      (position) => _hit(position) != null,
+                    ),
+                    (recognizer) => recognizer
+                      ..onStart = _onDragStart
+                      ..onUpdate = _onDragUpdate
+                      ..onEnd = _onDragEnd,
+                  ),
             },
             child: Stack(
               children: [
@@ -525,6 +550,16 @@ class _GraphPanelState extends ConsumerState<GraphPanel>
       },
     );
   }
+}
+
+class _NodeDragRecognizer extends PanGestureRecognizer {
+  _NodeDragRecognizer(this.hitsNode);
+
+  final bool Function(Offset) hitsNode;
+
+  @override
+  bool isPointerAllowed(PointerEvent event) =>
+      hitsNode(event.localPosition) && super.isPointerAllowed(event);
 }
 
 class _ResetButton extends StatelessWidget {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+
+import '../../core/back_link.dart';
 
 class NotFoundPage extends StatelessWidget {
   const NotFoundPage({required this.path, this.reason, super.key});
@@ -126,33 +127,7 @@ class _Frame extends StatelessWidget {
                   ],
                   if (showHome) ...[
                     const SizedBox(height: 26),
-                    MouseRegion(
-                      cursor: SystemMouseCursors.click,
-                      child: GestureDetector(
-                        onTap: () => context.go('/'),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              '< ',
-                              style: TextStyle(
-                                color: colorScheme.primary,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            Text(
-                              'back to the terminal',
-                              style: textTheme.bodyMedium?.copyWith(
-                                fontSize: 13,
-                                color: colorScheme.primary,
-                                decoration: TextDecoration.underline,
-                                decorationColor: colorScheme.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                    const BackLink(emphasised: true),
                   ],
                 ],
               ),

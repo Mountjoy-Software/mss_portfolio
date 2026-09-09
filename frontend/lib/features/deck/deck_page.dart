@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/api_client.dart';
+import '../../core/back_link.dart';
 import '../../core/markdown_style.dart';
 import '../../core/models.dart';
 import '../../core/streaming_markdown.dart';
@@ -74,11 +74,11 @@ class _Body extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _BackLink(),
+          const BackLink(),
           const SizedBox(height: 28),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.end,
+            spacing: 10,
             children: [
               Text(
                 project.name,
@@ -89,14 +89,12 @@ class _Body extends StatelessWidget {
                 ),
               ),
               if (project.year != null)
-                Padding(
-                  padding: const EdgeInsets.only(left: 10),
-                  child: Text(
-                    '${project.year}',
-                    style: textTheme.titleLarge?.copyWith(
-                      fontSize: 16,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
+                Text(
+                  '${project.year}',
+                  style: textTheme.titleLarge?.copyWith(
+                    fontSize: 16,
+                    height: 1.7,
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
             ],
@@ -167,40 +165,6 @@ class _Body extends StatelessWidget {
               MarkdownImage(src: shot.src, caption: shot.caption),
           ],
         ],
-      ),
-    );
-  }
-}
-
-class _BackLink extends StatelessWidget {
-  const _BackLink();
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: () => context.go('/'),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '< ',
-              style: TextStyle(
-                color: colorScheme.primary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            Text(
-              'back to the terminal',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontSize: 13,
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

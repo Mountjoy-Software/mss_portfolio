@@ -49,6 +49,7 @@ MAX_BULLETS = 3
 MAX_PROJECTS = 3
 MAX_SKILL_GROUPS = 4
 MAX_SKILLS = 9
+MAX_AUDIENCE = 800
 CACHE_SIZE = 32
 
 MONTHS = (
@@ -72,10 +73,10 @@ class RoleTake(BaseModel):
     bullets: list[str] = Field(
         description=(
             "What this role shows the reader, rewritten with the thing they care "
-            "about first. Three bullets for the roles that matter to them and two "
-            "for the rest; one only for a role that predates his software career. "
-            "One line each, under 150 characters, starting with a verb, ending "
-            "with a period."
+            "about first. Three bullets for the roles that matter to them, never "
+            "fewer than two for any role in his software career, and one for "
+            "anything before it. One line each, under 150 characters, starting "
+            "with a verb, ending with a period."
         )
     )
 
@@ -110,7 +111,9 @@ class Synthesis(BaseModel):
             "('Allison'), their role when they gave that instead ('a fintech CTO "
             "hiring a backend contractor'), the company and role when they pasted a "
             "posting ('the platform role at Acme'). Never echo the visitor's "
-            "sentence back, and never write 'this is for'."
+            "sentence back. Write it as the reader would be addressed rather than "
+            "as the visitor described them, so 'my mom' becomes 'Mom' and 'this is "
+            "for Allison, my wife' becomes 'Allison'."
         )
     )
     headline: str = Field(
@@ -131,7 +134,10 @@ class Synthesis(BaseModel):
         description="Every role in the record, most recent first."
     )
     projects: list[ProjectTake] = Field(
-        description="Exactly three projects, the ones most relevant to this reader."
+        description=(
+            "Three projects, the ones most relevant to this reader. Always three, "
+            "whoever is reading."
+        )
     )
     skills: list[SkillGroup] = Field(
         description=(
@@ -204,8 +210,12 @@ employer, a date, a metric or a technology, and never soften a fact to make it f
 reader. Every id, slug and skill you return must be copied from the record exactly, or
 it is dropped.
 
-Write plainly, in the third person, and prefer a specific detail over an adjective. The
-result has to fit on one page, so cut anything this reader would skim past.
+Write plainly, in the third person, and prefer a specific detail over an adjective.
+
+Fill the page. It holds every role with two or three bullets under each, three projects
+and four skill groups, and anything that overruns is trimmed from the bottom after you
+are done. Give the full set and let the trimming happen; a half empty page reads as
+though there was not enough to say.
 
 The visitor types the reader however they like, so read what they gave you for the
 person who will actually hold the page, and write for them:
@@ -213,7 +223,8 @@ person who will actually hold the page, and write for them:
 - A name, with or without a relationship. Use the name as the reader and write for
   someone who knows him personally: what he does, in words that carry outside the
   trade, and the work they would find interesting rather than the work that wins a
-  contract.
+  contract. Plain words, not new facts, and the same amount of them as any other
+  reader gets.
 - A job title, a team or a company. Lead with the parts of the record that role hires
   for and keep the vocabulary they use.
 - A pasted job posting. Pull the requirements out of it and answer them in order,
@@ -238,7 +249,7 @@ def _esc(text: str) -> str:
 
 
 def normalize(audience: str) -> str:
-    return " ".join(audience.split())[:120]
+    return " ".join(audience.split())[:MAX_AUDIENCE]
 
 
 def _brief(audience: str, excerpts: list[dict]) -> str:

@@ -85,11 +85,13 @@ class TranscriptEntry extends StatelessWidget {
             const WaitingIndicator(),
             if (toolActivity != null) ...[
               const SizedBox(width: 8),
-              Text(
-                toolActivity!,
-                style: textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                  fontSize: 14,
+              Flexible(
+                child: Text(
+                  toolActivity!,
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontSize: 14,
+                  ),
                 ),
               ),
             ],

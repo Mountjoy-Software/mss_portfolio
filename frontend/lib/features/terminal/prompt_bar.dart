@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/layout.dart';
+
 class PromptBar extends StatelessWidget {
   const PromptBar({
     required this.controller,
@@ -8,6 +10,7 @@ class PromptBar extends StatelessWidget {
     required this.menuOpen,
     required this.suggestion,
     required this.onKey,
+    this.onAcceptSuggestion,
     this.usage,
     super.key,
   });
@@ -18,12 +21,29 @@ class PromptBar extends StatelessWidget {
   final bool menuOpen;
   final String? suggestion;
   final KeyEventResult Function(FocusNode, KeyEvent) onKey;
+  final VoidCallback? onAcceptSuggestion;
   final Map<String, dynamic>? usage;
+
+  String _hint(bool compact) {
+    if (streaming) return 'working...';
+    if (menuOpen) {
+      return compact
+          ? 'tap a command to fill it in'
+          : 'up/down to choose    enter to run    esc to dismiss';
+    }
+    if (suggestion != null) {
+      return compact
+          ? 'tap here to take the suggestion'
+          : 'tab or right arrow to take the suggestion';
+    }
+    return "Type '/help' for a list of commands.";
+  }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final compact = isCompact(context);
     final promptStyle = textTheme.bodyMedium?.copyWith(
       fontSize: 15,
       height: 1.5,
@@ -33,6 +53,8 @@ class PromptBar extends StatelessWidget {
       fontSize: 11,
       color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
     );
+    final acceptable = suggestion != null && !streaming && !menuOpen;
+    final hint = Text(_hint(compact), style: hintStyle);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -69,7 +91,7 @@ class PromptBar extends StatelessWidget {
                     child: TextField(
                       controller: controller,
                       focusNode: focusNode,
-                      autofocus: true,
+                      autofocus: !compact,
                       minLines: 1,
                       maxLines: 8,
                       cursorColor: colorScheme.primary,
@@ -86,6 +108,7 @@ class PromptBar extends StatelessWidget {
                             alpha: 0.6,
                           ),
                         ),
+                        hintMaxLines: 3,
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,
                         focusedBorder: InputBorder.none,
@@ -100,20 +123,21 @@ class PromptBar extends StatelessWidget {
         ),
         Padding(
           padding: const EdgeInsets.only(top: 6, left: 2),
-          child: Row(
+          child: Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            spacing: 12,
+            runSpacing: 2,
             children: [
-              Expanded(
-                child: Text(
-                  streaming
-                      ? 'working...'
-                      : menuOpen
-                      ? 'up/down to choose    enter to run    esc to dismiss'
-                      : suggestion != null
-                      ? 'tab or right arrow to take the suggestion'
-                      : "Type '/help' for a list of commands.",
-                  style: hintStyle,
-                ),
-              ),
+              if (acceptable && onAcceptSuggestion != null)
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: onAcceptSuggestion,
+                    child: hint,
+                  ),
+                )
+              else
+                hint,
               if (usage != null)
                 Text(
                   '${usage!['cache_read']} cached / ${usage!['output_tokens']} out',
@@ -145,6 +169,11 @@ class CommandMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final compact = isCompact(context);
+    final description = textTheme.bodyMedium?.copyWith(
+      fontSize: 13,
+      color: colorScheme.onSurfaceVariant,
+    );
 
     return Container(
       decoration: BoxDecoration(
@@ -181,49 +210,77 @@ class CommandMenu extends StatelessWidget {
                     horizontal: 12,
                     vertical: 7,
                   ),
-                  child: Row(
-                    children: [
-                      Text(
-                        row.name,
-                        style: textTheme.bodyMedium?.copyWith(
-                          fontSize: 14,
-                          color: colorScheme.primary,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      if (row.argHint != null)
-                        Text(
-                          ' <${row.argHint}>',
-                          style: textTheme.bodyMedium?.copyWith(
-                            fontSize: 13,
-                            color: colorScheme.onSurfaceVariant.withValues(
-                              alpha: 0.8,
-                            ),
-                          ),
-                        ),
-                      Text(
-                        '  -  ',
-                        style: textTheme.bodyMedium?.copyWith(
-                          fontSize: 13,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          row.description,
-                          style: textTheme.bodyMedium?.copyWith(
-                            fontSize: 13,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                    ],
+                  child: _MenuRow(
+                    name: row.name,
+                    argHint: row.argHint,
+                    description: row.description,
+                    stacked: compact,
+                    descriptionStyle: description,
                   ),
                 ),
               ),
             ),
         ],
       ),
+    );
+  }
+}
+
+class _MenuRow extends StatelessWidget {
+  const _MenuRow({
+    required this.name,
+    required this.argHint,
+    required this.description,
+    required this.stacked,
+    required this.descriptionStyle,
+  });
+
+  final String name;
+  final String? argHint;
+  final String description;
+  final bool stacked;
+  final TextStyle? descriptionStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final title = Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(
+            text: name,
+            style: textTheme.bodyMedium?.copyWith(
+              fontSize: 14,
+              color: colorScheme.primary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          if (argHint != null)
+            TextSpan(
+              text: ' <$argHint>',
+              style: textTheme.bodyMedium?.copyWith(
+                fontSize: 13,
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+              ),
+            ),
+        ],
+      ),
+    );
+    final body = Text(description, style: descriptionStyle);
+
+    if (stacked) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [title, body],
+      );
+    }
+    return Row(
+      children: [
+        title,
+        Text('  -  ', style: descriptionStyle),
+        Expanded(child: body),
+      ],
     );
   }
 }

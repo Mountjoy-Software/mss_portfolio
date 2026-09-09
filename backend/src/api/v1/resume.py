@@ -18,7 +18,7 @@ TOO_MANY = (
 )
 UNAVAILABLE = "The resume could not be synthesized right now. Try again shortly."
 
-Audience = Query(alias="for", min_length=2, max_length=120)
+Audience = Query(alias="for", min_length=2, max_length=4000)
 
 
 async def _allow(request: Request) -> None:
