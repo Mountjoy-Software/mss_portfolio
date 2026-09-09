@@ -129,6 +129,14 @@ class SiteStack(Stack):
                     )
                 ],
             ),
+            error_responses=[
+                cloudfront.ErrorResponse(
+                    http_status=403,
+                    response_http_status=404,
+                    response_page_path="/404.html",
+                    ttl=Duration.minutes(5),
+                )
+            ],
             additional_behaviors={
                 "/api/*": cloudfront.BehaviorOptions(
                     origin=origins.HttpOrigin(

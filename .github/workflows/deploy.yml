@@ -116,10 +116,9 @@ jobs:
           cache: true
 
       - name: Build the web bundle
-        working-directory: frontend
         run: |
-          flutter pub get
-          flutter build web --release
+          (cd frontend && flutter pub get)
+          ./scripts/build-web.sh
 
       - name: Publish the web bundle
         run: |

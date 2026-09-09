@@ -3,11 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 
 import 'core/preferences.dart';
+import 'features/error/error_pages.dart';
 import 'core/router.dart';
 import 'theme/app_theme.dart';
 
 void main() {
   usePathUrlStrategy();
+  ErrorWidget.builder = (details) => const FatalErrorPage(
+    detail:
+        'Part of the page failed to render. Reloading usually clears it.',
+  );
   runApp(const ProviderScope(child: PortfolioApp()));
 }
 

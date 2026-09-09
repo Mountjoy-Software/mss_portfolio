@@ -7,6 +7,7 @@ import '../../core/api_client.dart';
 import '../../core/markdown_style.dart';
 import '../../core/models.dart';
 import '../../core/streaming_markdown.dart';
+import '../error/error_pages.dart';
 
 class DeckPage extends ConsumerWidget {
   const DeckPage({required this.slug, super.key});
@@ -15,7 +16,6 @@ class DeckPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final colorScheme = Theme.of(context).colorScheme;
     final profile = ref.watch(profileProvider);
 
     return Scaffold(
@@ -31,43 +31,29 @@ class DeckPage extends ConsumerWidget {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ),
               ),
-              error: (error, _) => Center(
-                child: Text(
-                  'Could not load that write-up.',
-                  style: TextStyle(color: colorScheme.error),
-                ),
+              error: (error, _) => const FatalErrorPage(
+                detail:
+                    'The API did not answer, so this write-up could not be '
+                    'loaded. It may be a moment of downtime rather than '
+                    'anything you did.',
               ),
               data: (data) {
                 final matches = data.projects
                     .where((p) => p.slug == slug)
                     .toList();
-                if (matches.isEmpty) return const _NotFound();
+                if (matches.isEmpty) {
+                  return NotFoundPage(
+                    path: '/deck/$slug',
+                    reason:
+                        'There is no write-up for that project. Type /projects '
+                        'in the terminal to see the ones that exist.',
+                  );
+                }
                 return _Body(project: matches.first);
               },
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _NotFound extends StatelessWidget {
-  const _NotFound();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text('No write-up at that address.'),
-          const SizedBox(height: 12),
-          TextButton(
-            onPressed: () => context.go('/'),
-            child: const Text('back'),
-          ),
-        ],
       ),
     );
   }

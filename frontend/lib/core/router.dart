@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 
 import '../features/deck/deck_page.dart';
+import '../features/error/error_pages.dart';
 import '../features/terminal/terminal_page.dart';
 
 final router = GoRouter(
@@ -11,4 +12,5 @@ final router = GoRouter(
       builder: (_, state) => DeckPage(slug: state.pathParameters['slug']!),
     ),
   ],
+  errorBuilder: (context, state) => NotFoundPage(path: state.uri.path),
 );

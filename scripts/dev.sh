@@ -33,7 +33,7 @@ fi
 
 if [ ! -d frontend/build/web ]; then
   echo "frontend/build/web is missing, building it"
-  (cd frontend && flutter build web --release)
+  ./scripts/build-web.sh
 fi
 
 exec docker compose "$@"
