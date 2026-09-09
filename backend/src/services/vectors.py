@@ -92,10 +92,6 @@ def client() -> QdrantClient:
     )
 
 
-def ready() -> bool:
-    return _ready
-
-
 def status() -> str:
     if _ready:
         return "ready"
@@ -147,7 +143,7 @@ def _index_payload() -> None:
 
 
 async def ensure_index() -> None:
-    global _ready, _failure
+    global _failure
     try:
         await _build()
     except Exception as error:

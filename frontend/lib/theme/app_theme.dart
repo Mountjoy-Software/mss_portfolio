@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-const primaryOrange = Color(0xFFE65C20);
+const _primaryOrange = Color(0xFFE65C20);
 const _lightScaffold = Color(0xFFF7EBEA);
 const _lightSurface = Color(0xFFFFFFFF);
 const _lightOnSurface = Color(0xFF1C1917);
@@ -28,10 +28,10 @@ ThemeData get lightTheme => ThemeData(
   ),
   colorScheme:
       ColorScheme.fromSeed(
-        seedColor: primaryOrange,
+        seedColor: _primaryOrange,
         brightness: Brightness.light,
       ).copyWith(
-        primary: primaryOrange,
+        primary: _primaryOrange,
         onPrimary: Colors.white,
         secondary: const Color(0xFFB45309),
         onSecondary: Colors.white,
@@ -65,10 +65,10 @@ ThemeData get darkTheme => ThemeData(
   ),
   colorScheme:
       ColorScheme.fromSeed(
-        seedColor: primaryOrange,
+        seedColor: _primaryOrange,
         brightness: Brightness.dark,
       ).copyWith(
-        primary: primaryOrange,
+        primary: _primaryOrange,
         onPrimary: Colors.white,
         secondary: const Color(0xFFF0A868),
         onSecondary: Colors.black,
