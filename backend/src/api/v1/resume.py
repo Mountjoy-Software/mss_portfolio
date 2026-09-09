@@ -42,7 +42,7 @@ async def synthesize(body: ResumeRequest, request: Request) -> dict:
         log.exception("resume synthesis failed")
         raise HTTPException(503, UNAVAILABLE)
     return {
-        "audience": audience,
+        "reader": synth.reader,
         "headline": synth.headline,
         "positioning": synth.positioning,
         "url": resume.download_path(audience),
@@ -54,11 +54,12 @@ async def download(request: Request, audience: str = Audience) -> Response:
     await _allow(request)
     audience = resume.normalize(audience)
     try:
-        content = await resume.pdf(audience)
+        synth = await resume.for_audience(audience)
+        content = resume.render(synth)
     except Exception:
         log.exception("resume render failed")
         raise HTTPException(503, UNAVAILABLE)
-    disposition = f'attachment; filename="{resume.filename(audience)}"'
+    disposition = f'attachment; filename="{resume.filename(synth.reader)}"'
     return Response(
         content,
         media_type="application/pdf",

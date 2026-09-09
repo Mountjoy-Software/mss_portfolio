@@ -136,19 +136,19 @@ class Project {
 
 class Resume {
   const Resume({
-    required this.audience,
+    required this.reader,
     required this.headline,
     required this.positioning,
     required this.url,
   });
 
-  final String audience;
+  final String reader;
   final String headline;
   final String positioning;
   final String url;
 
   factory Resume.fromJson(Map<String, dynamic> json) => Resume(
-    audience: json['audience'] as String? ?? '',
+    reader: json['reader'] as String? ?? '',
     headline: json['headline'] as String? ?? '',
     positioning: json['positioning'] as String? ?? '',
     url: json['url'] as String,

@@ -50,10 +50,11 @@ TOOLS = [
                 "audience": {
                     "type": "string",
                     "description": (
-                        "Who the resume is for, as a short phrase, for example "
-                        "'a fintech CTO hiring a backend contractor' or 'a recruiter "
-                        "filling a senior Flutter role'. Use the visitor's own words "
-                        "where they gave them, and 'a hiring manager or prospective "
+                        "Who the resume is for. A name where the visitor gave one "
+                        "('Allison, his wife'), otherwise a role or a company "
+                        "('a fintech CTO hiring a backend contractor'), or the "
+                        "requirements where they pasted a posting. Use the "
+                        "visitor's own words, and 'a hiring manager or prospective "
                         "client' where they gave nothing."
                     ),
                 }
@@ -194,17 +195,17 @@ async def _synthesize_resume(audience: str) -> str:
             "The resume could not be synthesized. Tell the visitor to try again "
             "shortly, or to email for one."
         )
-    return f"""A one-page PDF is ready, written for {audience}.
+    return f"""A one-page PDF is ready, written for {synth.reader}.
 
 Headline: {synth.headline}
 Opening: {synth.positioning}
 Download path: {resume.download_path(audience)}
 
-Say in one or two sentences who it is aimed at and what it leads with, then offer the
-download as a markdown link with the path exactly as written above, like
-[Download the PDF]({resume.download_path(audience)}). Never paste the path as bare
-text. Mention that it was synthesized just now and that a different reader gets a
-different resume."""
+Say in one or two sentences who it is aimed at, calling them {synth.reader}, and what
+it leads with. Then offer the download as a markdown link with the path exactly as
+written above, like [Download the PDF]({resume.download_path(audience)}). Never paste
+the path as bare text. Mention that it was synthesized just now and that a different
+reader gets a different resume."""
 
 
 async def _run_tool(name: str, args: dict) -> str:

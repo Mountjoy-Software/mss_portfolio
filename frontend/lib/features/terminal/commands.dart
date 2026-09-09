@@ -84,7 +84,7 @@ String resumeReply(Resume resume) {
   return '''
 ### ${resume.headline}
 
-Synthesized for **${resume.audience}**.
+Synthesized for **${resume.reader}**.
 
 ${resume.positioning}
 
@@ -115,7 +115,7 @@ Full write-up in [this site's deck](/deck/mss-portfolio).
 
 String mcpReply(String origin) {
   return """
-This site runs an MCP server, so you can point your own agent at Ross's record
+This site runs an MCP server, so you can point your own agent at Ross's portfolio
 instead of reading it here. One tool, `search_ross_mountjoy`, embeds your
 question and matches it against the same Qdrant collection the assistant on this
 page uses. No key, no account, no auth.
