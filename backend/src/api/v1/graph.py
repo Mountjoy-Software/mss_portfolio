@@ -1,6 +1,5 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException
 
-from src.config import settings
 from src.services import vectors
 
 router = APIRouter()
@@ -18,9 +17,6 @@ async def seed() -> dict:
 
 
 @router.get("/graph/expand/{point_id}")
-async def expand(
-    point_id: str,
-    limit: int = Query(default=settings.GRAPH_EXPAND_LIMIT, ge=1, le=12),
-) -> dict:
+async def expand(point_id: str) -> dict:
     await _require_index()
-    return {"nodes": await vectors.expand(point_id, limit)}
+    return {"nodes": await vectors.expand(point_id)}

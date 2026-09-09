@@ -179,6 +179,8 @@ class GraphNode {
     required this.kind,
     required this.title,
     required this.payload,
+    required this.expands,
+    this.relation,
     this.score,
   });
 
@@ -186,6 +188,8 @@ class GraphNode {
   final String kind;
   final String title;
   final Map<String, dynamic> payload;
+  final String expands;
+  final String? relation;
   final double? score;
 
   bool get isCategory => kind == 'category';
@@ -195,11 +199,15 @@ class GraphNode {
       ..remove('id')
       ..remove('kind')
       ..remove('title')
-      ..remove('score');
+      ..remove('score')
+      ..remove('expands')
+      ..remove('relation');
     return GraphNode(
       id: json['id'] as String,
       kind: json['kind'] as String? ?? 'unknown',
       title: json['title'] as String? ?? '',
+      expands: json['expands'] as String? ?? '',
+      relation: json['relation'] as String?,
       score: (json['score'] as num?)?.toDouble(),
       payload: payload,
     );

@@ -17,7 +17,6 @@ class Settings(BaseSettings):
     QDRANT_API_KEY: str = ""
     EMBED_MODEL: str = "amazon.titan-embed-text-v2:0"
     EMBED_DIMENSIONS: int = 512
-    GRAPH_EXPAND_LIMIT: int = 7
     RAG_CONTEXT_LIMIT: int = 6
 
     DDB_TABLE: str = "mss-portfolio"

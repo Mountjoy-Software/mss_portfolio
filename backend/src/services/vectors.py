@@ -2,6 +2,7 @@ import asyncio
 import logging
 import time
 import uuid
+from dataclasses import dataclass
 from functools import cache
 
 from qdrant_client import QdrantClient
@@ -30,8 +31,48 @@ MEMBERS = {
     "about": ["bio", "education"],
     "projects": ["project"],
     "experience": ["role"],
-    "skills": ["skill"],
+    "skills": ["skill_group"],
 }
+
+
+@dataclass(frozen=True)
+class Link:
+    kind: str
+    relation: str
+    limit: int = 6
+    match: tuple[str, ...] = ()
+    listed: tuple[str, str] | None = None
+
+
+LINKS = {
+    "project": [
+        Link("skill", "its stack", 20, listed=("stack", "title")),
+        Link("skill", "nearest other skills", 3),
+        Link("role", "nearest role", 1),
+    ],
+    "role": [
+        Link("highlight", "what shipped in the role", 12, match=("company", "role")),
+        Link("skill", "its stack", 20, listed=("stack", "title")),
+        Link("project", "nearest projects", 3),
+    ],
+    "highlight": [
+        Link("skill", "nearest skills", 4),
+        Link("project", "nearest projects", 2),
+    ],
+    "skill_group": [Link("skill", "skills in the group", 40, match=("group",))],
+    "skill": [
+        Link("project", "projects listing it", 10, listed=("title", "stack")),
+        Link("role", "roles listing it", 10, listed=("title", "stack")),
+        Link("highlight", "nearest work", 3),
+    ],
+    "bio": [
+        Link("role", "roles held", 4),
+        Link("education", "education", 2),
+    ],
+    "education": [Link("skill", "nearest skills", 4)],
+}
+
+INDEXED = ("kind", "group", "company", "role", "title", "stack")
 
 _ready = False
 _failure: str | None = None
@@ -93,9 +134,14 @@ def _create() -> None:
             size=settings.EMBED_DIMENSIONS, distance=Distance.COSINE
         ),
     )
-    client().create_payload_index(
-        COLLECTION, field_name="kind", field_schema=PayloadSchemaType.KEYWORD
-    )
+    _index_payload()
+
+
+def _index_payload() -> None:
+    for name in INDEXED:
+        client().create_payload_index(
+            COLLECTION, field_name=name, field_schema=PayloadSchemaType.KEYWORD
+        )
 
 
 async def ensure_index() -> None:
@@ -117,6 +163,7 @@ async def _build() -> None:
     if exists:
         current = await asyncio.to_thread(_stored_fingerprint)
         if current == fingerprint:
+            await asyncio.to_thread(_index_payload)
             _ready = True
             log.info("vector index already current at %s", fingerprint)
             return
@@ -153,12 +200,19 @@ async def _build() -> None:
     log.info("vector index built: %d points at %s", len(points), fingerprint)
 
 
+def _expands(payload: dict) -> str:
+    if payload.get("kind") == "category":
+        return "its members"
+    return ", ".join(link.relation for link in LINKS.get(payload.get("kind"), []))
+
+
 def _node(point) -> dict:
     payload = dict(point.payload or {})
     payload.pop("text", None)
     return {
         "id": str(point.id),
         "score": getattr(point, "score", None),
+        "expands": _expands(payload),
         **payload,
     }
 
@@ -177,7 +231,7 @@ async def seed() -> list[dict]:
     return [_node(point) for point in found.points]
 
 
-async def expand(point_id: str, limit: int) -> list[dict]:
+async def expand(point_id: str) -> list[dict]:
     origin = await asyncio.to_thread(
         client().retrieve,
         collection_name=COLLECTION,
@@ -190,26 +244,47 @@ async def expand(point_id: str, limit: int) -> list[dict]:
 
     point = origin[0]
     payload = point.payload or {}
-    kinds = MEMBERS.get(payload.get("category", ""), [])
-
-    conditions = [HasIdCondition(has_id=[point_id])]
-    if kinds:
-        must = [FieldCondition(key="kind", match=MatchAny(any=kinds))]
+    if payload.get("kind") == "category":
+        kinds = MEMBERS.get(payload.get("category", ""), [])
+        links = [Link(kind, "members", 40) for kind in kinds]
     else:
-        must = None
-        conditions.append(
-            FieldCondition(key="kind", match=MatchAny(any=["category", "meta"]))
-        )
+        links = LINKS.get(payload.get("kind", ""), [])
 
-    found = await asyncio.to_thread(
-        client().query_points,
-        collection_name=COLLECTION,
-        query=point.vector,
-        query_filter=Filter(must=must, must_not=conditions),
-        limit=limit,
-        with_payload=True,
-    )
-    return [_node(hit) for hit in found.points]
+    nodes = []
+    seen = [point_id]
+    for link in links:
+        must = [FieldCondition(key="kind", match=MatchValue(value=link.kind))]
+        for key in link.match:
+            if payload.get(key) is None:
+                break
+            must.append(
+                FieldCondition(key=key, match=MatchValue(value=payload[key]))
+            )
+        else:
+            if link.listed:
+                source, target = link.listed
+                values = payload.get(source)
+                values = values if isinstance(values, list) else [values]
+                values = [v for v in values if v]
+                if not values:
+                    continue
+                must.append(
+                    FieldCondition(key=target, match=MatchAny(any=values))
+                )
+            found = await asyncio.to_thread(
+                client().query_points,
+                collection_name=COLLECTION,
+                query=point.vector,
+                query_filter=Filter(
+                    must=must, must_not=[HasIdCondition(has_id=seen)]
+                ),
+                limit=link.limit,
+                with_payload=True,
+            )
+            for hit in found.points:
+                nodes.append({**_node(hit), "relation": link.relation})
+                seen.append(str(hit.id))
+    return nodes
 
 
 async def context(question: str, limit: int) -> list[dict]:

@@ -13,14 +13,35 @@ const _repulsionRange = 300.0;
 const _stiffness = 0.02;
 const _damping = 0.85;
 const _centering = 0.012;
-const _minSeparation = 30.0;
+const _minSeparation = 40.0;
 const _maxSpeed = 14.0;
 const _panelHeight = 460.0;
+const _hop = 115.0;
+
+const _kindLabels = {'skill_group': 'skill group'};
+
+String kindLabel(String kind) => _kindLabels[kind] ?? kind;
+
+Color kindColour(String kind, ColorScheme scheme) {
+  final dark = scheme.brightness == Brightness.dark;
+  return switch (kind) {
+    'category' => scheme.primary,
+    'project' => dark ? const Color(0xFF2DD4BF) : const Color(0xFF0D9488),
+    'role' => dark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB),
+    'highlight' => dark ? const Color(0xFF93C5FD) : const Color(0xFF3B82F6),
+    'skill_group' => dark ? const Color(0xFFC084FC) : const Color(0xFF9333EA),
+    'skill' => dark ? const Color(0xFFD8B4FE) : const Color(0xFFA855F7),
+    'bio' ||
+    'education' => dark ? const Color(0xFFFBBF24) : const Color(0xFFD97706),
+    _ => scheme.onSurfaceVariant,
+  };
+}
 
 class _Body {
-  _Body(this.node, this.x, this.y);
+  _Body(this.node, this.x, this.y, {this.parent});
 
   final GraphNode node;
+  final String? parent;
   double x;
   double y;
   double vx = 0;
@@ -28,7 +49,13 @@ class _Body {
   bool expanded = false;
   bool pinned = false;
 
-  double get radius => node.isCategory ? 9 : 6;
+  double get radius => switch (node.kind) {
+    'category' => 9,
+    'skill_group' || 'project' || 'role' => 7,
+    _ => 5.5,
+  };
+
+  bool get prominent => radius >= 7;
 }
 
 class _Edge {
@@ -108,30 +135,80 @@ class _GraphPanelState extends ConsumerState<GraphPanel>
     try {
       final neighbours = await ref.read(apiClientProvider).expandNode(id);
       if (!mounted) return;
-      setState(() {
-        for (final (i, node) in neighbours.indexed) {
-          if (_bodies[node.id] == null) {
-            final angle =
-                i * 2 * pi / max(1, neighbours.length) +
-                _random.nextDouble() * 0.5;
-            _bodies[node.id] = _Body(
-              node,
-              origin.x + cos(angle) * 120,
-              origin.y + sin(angle) * 120,
-            );
-          }
-          final already = _edges.any(
-            (e) =>
-                (e.from == id && e.to == node.id) ||
-                (e.from == node.id && e.to == id),
-          );
-          if (!already) _edges.add(_Edge(id, node.id, node.score ?? 0.2));
-        }
-      });
+      setState(() => _place(origin, neighbours));
     } catch (_) {
       origin.expanded = false;
     }
   }
+
+  void _place(_Body origin, List<GraphNode> neighbours) {
+    final parent = origin.parent == null ? null : _bodies[origin.parent];
+    final fresh = neighbours.where((n) => _bodies[n.id] == null).toList();
+    final outward = parent == null
+        ? 0.0
+        : atan2(origin.y - parent.y, origin.x - parent.x);
+    final spread = parent == null ? 2 * pi : pi * 1.15;
+    for (final (i, node) in fresh.indexed) {
+      final t = parent == null
+          ? i / fresh.length
+          : (fresh.length == 1 ? 0.5 : i / (fresh.length - 1)) - 0.5;
+      final angle = outward + t * spread + (_random.nextDouble() - 0.5) * 0.15;
+      final reach = _hop + _random.nextDouble() * 20;
+      _bodies[node.id] = _Body(
+        node,
+        origin.x + cos(angle) * reach,
+        origin.y + sin(angle) * reach,
+        parent: origin.node.id,
+      );
+    }
+    for (final node in neighbours) {
+      final already = _edges.any(
+        (e) =>
+            (e.from == origin.node.id && e.to == node.id) ||
+            (e.from == node.id && e.to == origin.node.id),
+      );
+      if (!already) {
+        _edges.add(_Edge(origin.node.id, node.id, node.score ?? 0.2));
+      }
+    }
+  }
+
+  void _collapse(String id) {
+    bool under(String? cursor) {
+      while (cursor != null) {
+        if (cursor == id) return true;
+        cursor = _bodies[cursor]?.parent;
+      }
+      return false;
+    }
+
+    final doomed = {
+      for (final body in _bodies.values)
+        if (body.node.id != id && under(body.parent)) body.node.id,
+    };
+    setState(() {
+      _bodies.removeWhere((key, _) => doomed.contains(key));
+      _edges.removeWhere(
+        (e) => doomed.contains(e.from) || doomed.contains(e.to),
+      );
+      _bodies[id]?.expanded = false;
+      if (_hovered != null && doomed.contains(_hovered)) _hovered = null;
+    });
+  }
+
+  List<String> _path(String id) {
+    final titles = <String>[];
+    String? cursor = id;
+    while (cursor != null) {
+      final body = _bodies[cursor];
+      if (body == null) break;
+      titles.insert(0, body.node.title);
+      cursor = body.parent;
+    }
+    return titles;
+  }
+
+  bool _hasChildren(String id) => _bodies.values.any((b) => b.parent == id);
 
   void _tick(Duration elapsed) {
     final dt = (elapsed - _last).inMicroseconds / 1e6;
@@ -175,7 +252,7 @@ class _GraphPanelState extends ConsumerState<GraphPanel>
       final a = _bodies[edge.from];
       final b = _bodies[edge.to];
       if (a == null || b == null) continue;
-      final rest = 135 - 50 * edge.weight.clamp(0.0, 1.0);
+      final rest = _hop + 20 - 50 * edge.weight.clamp(0.0, 1.0);
       final dx = b.x - a.x;
       final dy = b.y - a.y;
       final distance = max(0.01, sqrt(dx * dx + dy * dy));
@@ -188,7 +265,8 @@ class _GraphPanelState extends ConsumerState<GraphPanel>
       fy[b.node.id] = fy[b.node.id]! - uy * pull;
     }
 
-    final limit = min(_size.width, _size.height) / 2 - 20;
+    final limitX = _size.width / 2 - 30;
+    final limitY = _size.height / 2 - 24;
     for (final body in list) {
       if (body.pinned) {
         body.vx = 0;
@@ -204,13 +282,8 @@ class _GraphPanelState extends ConsumerState<GraphPanel>
         body.vx *= _maxSpeed / speed;
         body.vy *= _maxSpeed / speed;
       }
-      body.x += body.vx * step;
-      body.y += body.vy * step;
-      final radius = sqrt(body.x * body.x + body.y * body.y);
-      if (radius > limit) {
-        body.x *= limit / radius;
-        body.y *= limit / radius;
-      }
+      body.x = (body.x + body.vx * step).clamp(-limitX, limitX);
+      body.y = (body.y + body.vy * step).clamp(-limitY, limitY);
     }
     _repaint.value++;
   }
@@ -256,11 +329,13 @@ class _GraphPanelState extends ConsumerState<GraphPanel>
         const SizedBox(height: 8),
         Text(
           'Every point is a piece of this portfolio, embedded with Amazon Bedrock '
-          'Titan and stored in a Qdrant collection; the lines are cosine '
-          'similarity between them. Expanding ${widget.seed} runs a vector search '
-          'filtered to that kind, and expanding anything else searches the whole '
-          'collection for nearest neighbours. Hover a point to see it, drag to '
-          'rearrange.\n\n'
+          'Titan and stored in a Qdrant collection. Start at the ${widget.seed} '
+          'hub and tap outward: a project opens the skills it leans on, a role '
+          'opens what shipped in it, a skill opens the projects that used it. '
+          'Each hop is a vector search filtered to one kind of point and ordered '
+          'by cosine similarity, so what appears is whatever sits closest in '
+          'embedding space, not a hand-written list. Hover to read a point, drag '
+          'to rearrange, and expand or collapse from the inspector.\n\n'
           'This collection is also how the assistant on this site knows anything. '
           'Each question is embedded the same way and the closest points are '
           'retrieved and handed to Claude as context, so it can talk about '
@@ -288,10 +363,21 @@ class _GraphPanelState extends ConsumerState<GraphPanel>
       child: LayoutBuilder(
         builder: (context, constraints) {
           final wide = constraints.maxWidth >= 620;
+          final selected = _selected == null ? null : _bodies[_selected];
           final inspector = _Inspector(
-            node: _selected == null ? null : _bodies[_selected]?.node,
+            body: selected,
+            path: selected == null ? const [] : _path(selected.node.id),
+            kinds: {for (final b in _bodies.values) b.node.kind},
             total: _bodies.length,
             edges: _edges.length,
+            canCollapse:
+                selected != null &&
+                selected.expanded &&
+                _hasChildren(selected.node.id),
+            onExpand: selected == null ? null : () => _expand(selected.node.id),
+            onCollapse: selected == null
+                ? null
+                : () => _collapse(selected.node.id),
           );
           return wide
               ? Row(
@@ -328,7 +414,6 @@ class _GraphPanelState extends ConsumerState<GraphPanel>
 
   Widget _canvas() {
     final colorScheme = Theme.of(context).colorScheme;
-    final dark = colorScheme.brightness == Brightness.dark;
     final textTheme = Theme.of(context).textTheme;
 
     if (_error != null) {
@@ -420,13 +505,7 @@ class _GraphPanelState extends ConsumerState<GraphPanel>
                       edges: _edges,
                       selected: _selected,
                       hovered: _hovered,
-                      hub: colorScheme.primary,
-                      leaf: dark
-                          ? const Color(0xFF2DD4BF)
-                          : const Color(0xFF0D9488),
-                      label: colorScheme.onSurface,
-                      muted: colorScheme.onSurfaceVariant,
-                      tooltipFill: colorScheme.surface,
+                      scheme: colorScheme,
                       tooltipBorder: colorScheme.onSurfaceVariant.withValues(
                         alpha: 0.45,
                       ),
@@ -489,11 +568,7 @@ class _GraphPainter extends CustomPainter {
     required this.edges,
     required this.selected,
     required this.hovered,
-    required this.hub,
-    required this.leaf,
-    required this.label,
-    required this.muted,
-    required this.tooltipFill,
+    required this.scheme,
     required this.tooltipBorder,
     required Listenable repaint,
   }) : super(repaint: repaint);
@@ -502,21 +577,17 @@ class _GraphPainter extends CustomPainter {
   final List<_Edge> edges;
   final String? selected;
   final String? hovered;
-  final Color hub;
-  final Color leaf;
-  final Color label;
-  final Color muted;
-  final Color tooltipFill;
+  final ColorScheme scheme;
   final Color tooltipBorder;
 
   static final _labels = <String, TextPainter>{};
 
-  TextPainter _labelFor(String text, Color colour) {
-    return _labels.putIfAbsent('$text|${colour.toARGB32()}', () {
+  TextPainter _labelFor(String text, Color colour, {int limit = 26}) {
+    return _labels.putIfAbsent('$text|${colour.toARGB32()}|$limit', () {
       final painter = TextPainter(
         text: TextSpan(
-          text: text.length > 30 ? '${text.substring(0, 29)}…' : text,
-          style: TextStyle(color: colour, fontSize: 11, height: 1.2),
+          text: text.length > limit ? '${text.substring(0, limit - 1)}…' : text,
+          style: TextStyle(color: colour, fontSize: 10.5, height: 1.2),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
@@ -534,17 +605,17 @@ class _GraphPainter extends CustomPainter {
       final a = bodies[edge.from];
       final b = bodies[edge.to];
       if (a == null || b == null) continue;
-      line.color = hub.withValues(
-        alpha: (0.16 + edge.weight * 0.5).clamp(0.12, 0.7),
-      );
+      line.color = kindColour(
+        b.node.kind,
+        scheme,
+      ).withValues(alpha: (0.18 + edge.weight * 0.5).clamp(0.14, 0.7));
       canvas.drawLine(Offset(a.x, a.y), Offset(b.x, b.y), line);
     }
 
     for (final body in bodies.values) {
-      final colour = body.node.isCategory || body.expanded ? hub : leaf;
+      final colour = kindColour(body.node.kind, scheme);
       final centre = Offset(body.x, body.y);
-      final isSelected = body.node.id == selected;
-      if (isSelected) {
+      if (body.node.id == selected) {
         canvas.drawCircle(
           centre,
           body.radius + 5,
@@ -554,9 +625,28 @@ class _GraphPainter extends CustomPainter {
             ..color = colour,
         );
       }
-      canvas.drawCircle(centre, body.radius, Paint()..color = colour);
-      if (body.node.isCategory && body.node.id != hovered) {
-        final painter = _labelFor(body.node.title, label);
+      canvas.drawCircle(
+        centre,
+        body.radius,
+        Paint()..color = body.expanded ? colour : colour.withValues(alpha: 0.8),
+      );
+      if (!body.expanded && body.node.kind != 'category') {
+        canvas.drawCircle(
+          centre,
+          body.radius,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.2
+            ..color = colour,
+        );
+      }
+      if (body.node.id != hovered) {
+        final painter = _labelFor(
+          body.node.title,
+          body.prominent
+              ? scheme.onSurface
+              : scheme.onSurfaceVariant.withValues(alpha: 0.85),
+        );
         painter.paint(
           canvas,
           Offset(body.x - painter.width / 2, body.y + body.radius + 4),
@@ -602,15 +692,28 @@ class _GraphPainter extends CustomPainter {
     final maxTextWidth = min(300.0, max(120.0, size.width - 60));
     final title = _wrapped(
       body.node.title,
-      label,
+      scheme.onSurface,
       maxTextWidth,
       12.5,
       FontWeight.w600,
     );
-    final detail = body.node.score != null && body.node.score! > 0
-        ? '${body.node.kind}  ·  ${body.node.score!.toStringAsFixed(3)}'
-        : body.node.kind;
-    final subtitle = _wrapped(detail, muted, maxTextWidth, 11, FontWeight.w400);
+    final detail = [
+      kindLabel(body.node.kind),
+      if (body.node.relation != null) body.node.relation!,
+      if (body.node.score != null && body.node.score! > 0)
+        'cosine ${body.node.score!.toStringAsFixed(3)}',
+      if (body.expanded)
+        'tap for detail'
+      else if (body.node.expands.isNotEmpty)
+        'tap to open ${body.node.expands}',
+    ].join('  ·  ');
+    final subtitle = _wrapped(
+      detail,
+      scheme.onSurfaceVariant,
+      maxTextWidth,
+      11,
+      FontWeight.w400,
+    );
 
     final width = max(title.width, subtitle.width) + padding * 2;
     final height = title.height + subtitle.height + padding * 2 + 4;
@@ -627,7 +730,7 @@ class _GraphPainter extends CustomPainter {
       Rect.fromLTWH(left, top, width, height),
       const Radius.circular(5),
     );
-    canvas.drawRRect(box, Paint()..color = tooltipFill);
+    canvas.drawRRect(box, Paint()..color = scheme.surface);
     canvas.drawRRect(
       box,
       Paint()
@@ -646,21 +749,31 @@ class _GraphPainter extends CustomPainter {
   bool shouldRepaint(_GraphPainter oldDelegate) =>
       oldDelegate.selected != selected ||
       oldDelegate.hovered != hovered ||
-      oldDelegate.hub != hub ||
-      oldDelegate.leaf != leaf ||
-      oldDelegate.tooltipFill != tooltipFill;
+      oldDelegate.scheme != scheme;
 }
 
 class _Inspector extends StatelessWidget {
   const _Inspector({
-    required this.node,
+    required this.body,
+    required this.path,
+    required this.kinds,
     required this.total,
     required this.edges,
+    required this.canCollapse,
+    required this.onExpand,
+    required this.onCollapse,
   });
 
-  final GraphNode? node;
+  final _Body? body;
+  final List<String> path;
+  final Set<String> kinds;
   final int total;
   final int edges;
+  final bool canCollapse;
+  final VoidCallback? onExpand;
+  final VoidCallback? onCollapse;
+
+  static const _hidden = {'deck', 'text', 'skills', 'media'};
 
   @override
   Widget build(BuildContext context) {
@@ -669,7 +782,8 @@ class _Inspector extends StatelessWidget {
     final mono = textTheme.bodyMedium?.copyWith(fontSize: 12, height: 1.55);
     final muted = mono?.copyWith(color: colorScheme.onSurfaceVariant);
 
-    final current = node;
+    final current = body;
+    final node = current?.node;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(14),
       child: Column(
@@ -682,14 +796,41 @@ class _Inspector extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-          Text('$total points · $edges edges', style: muted),
-          Text('drag to rearrange · tap to expand', style: muted),
+          Text('$total points on screen · $edges edges', style: muted),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 10,
+            runSpacing: 4,
+            children: [
+              for (final kind in kinds.toList()..sort())
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: kindColour(kind, colorScheme),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    Text(kindLabel(kind), style: muted),
+                  ],
+                ),
+            ],
+          ),
           const SizedBox(height: 14),
-          if (current == null)
-            Text('Tap a point to inspect its payload.', style: muted)
+          if (current == null || node == null)
+            Text('Tap a point to inspect it.', style: muted)
           else ...[
+            if (path.length > 1)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Text(path.join('  ›  '), style: muted),
+              ),
             Text(
-              current.title,
+              node.title,
               style: mono?.copyWith(
                 color: colorScheme.onSurface,
                 fontWeight: FontWeight.w700,
@@ -697,33 +838,46 @@ class _Inspector extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            _Row(label: 'kind', value: current.kind, style: mono, muted: muted),
-            if (current.score != null && current.score! > 0)
+            _Row(
+              label: 'kind',
+              value: kindLabel(node.kind),
+              style: mono,
+              muted: muted,
+            ),
+            if (node.relation != null)
               _Row(
-                label: 'score',
-                value: current.score!.toStringAsFixed(4),
+                label: 'shown as',
+                value: node.relation!,
                 style: mono,
                 muted: muted,
               ),
-            if (current.payload['deck'] != null)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                child: MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: GestureDetector(
-                    onTap: () => context.go('${current.payload['deck']}'),
-                    child: Text(
-                      'open the full write-up >',
-                      style: mono?.copyWith(
-                        color: colorScheme.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
+            if (node.score != null && node.score! > 0)
+              _Row(
+                label: 'cosine',
+                value: node.score!.toStringAsFixed(4),
+                style: mono,
+                muted: muted,
               ),
-            for (final entry in current.payload.entries)
-              if (entry.key != 'deck' &&
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 16,
+              children: [
+                if (node.payload['deck'] != null)
+                  _Action(
+                    label: 'open the full write-up >',
+                    onTap: () => context.go('${node.payload['deck']}'),
+                  ),
+                if (!current.expanded &&
+                    node.expands.isNotEmpty &&
+                    onExpand != null)
+                  _Action(label: 'expand >', onTap: onExpand!),
+                if (canCollapse && onCollapse != null)
+                  _Action(label: 'collapse <', onTap: onCollapse!),
+              ],
+            ),
+            const SizedBox(height: 10),
+            for (final entry in node.payload.entries)
+              if (!_hidden.contains(entry.key) &&
                   entry.value != null &&
                   '${entry.value}'.isNotEmpty)
                 _Row(
@@ -736,13 +890,43 @@ class _Inspector extends StatelessWidget {
                 ),
             const SizedBox(height: 12),
             Text(
-              current.isCategory
-                  ? 'Expanding this runs a filtered vector search for its members.'
-                  : 'Expanding this runs a nearest-neighbour search across the collection.',
+              node.expands.isEmpty
+                  ? 'This point has nothing further to open.'
+                  : 'Expanding this runs a vector search from its embedding, '
+                        'filtered by kind, for ${node.expands}.',
               style: muted,
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _Action extends StatelessWidget {
+  const _Action({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontSize: 12,
+              color: colorScheme.primary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
       ),
     );
   }

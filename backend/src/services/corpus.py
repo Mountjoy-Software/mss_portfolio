@@ -29,6 +29,18 @@ class Doc:
 def _skill_docs(profile: dict) -> list[Doc]:
     docs = []
     for group, items in (profile.get("skills") or {}).items():
+        label = group.replace("_", " ")
+        docs.append(
+            Doc(
+                key=f"skill_group:{group}",
+                kind="skill_group",
+                title=label,
+                text=f"{label.capitalize()} skills Ross Mountjoy works with: "
+                + ", ".join(items)
+                + ".",
+                payload={"group": group, "skills": items},
+            )
+        )
         for item in items:
             docs.append(
                 Doc(

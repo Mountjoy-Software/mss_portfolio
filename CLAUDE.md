@@ -84,6 +84,8 @@ time, not import. It lives in `requirements-dev.txt` only; Fargate uses the task
 `scripts/dev.sh` exports short-lived AWS credentials into the api container for Bedrock,
 and they expire. A long-running compose session eventually fails embedding calls with
 `ExpiredTokenException`; `./scripts/dev.sh up -d --force-recreate api` refreshes them.
+`dev.sh restart api` does not, because `docker compose restart` keeps the container's
+original environment.
 Retrieval and the index build both degrade rather than fail when that happens, so the
 symptom is a graph 503 and answers without retrieved context, not an outage.
 
