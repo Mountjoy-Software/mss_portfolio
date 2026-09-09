@@ -37,7 +37,14 @@ class ApiClient {
   Future<List<GraphNode>> _nodes(Uri uri) async {
     final response = await _client.get(uri);
     if (response.statusCode != 200) {
-      throw ApiException('The graph is unavailable', response.statusCode);
+      var message = 'The graph is unavailable.';
+      try {
+        final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+        if (decoded is Map && decoded['detail'] is String) {
+          message = decoded['detail'] as String;
+        }
+      } catch (_) {}
+      throw ApiException(message, response.statusCode);
     }
     final decoded =
         jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;

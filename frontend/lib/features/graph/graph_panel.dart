@@ -96,7 +96,7 @@ class _GraphPanelState extends ConsumerState<GraphPanel>
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = '$error';
+        _error = error is ApiException ? error.message : '$error';
       });
     }
   }
@@ -330,14 +330,22 @@ class _GraphPanelState extends ConsumerState<GraphPanel>
     if (_error != null) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Text(
-            'The graph is unavailable. The vector index may still be building.',
-            textAlign: TextAlign.center,
-            style: textTheme.bodyMedium?.copyWith(
-              fontSize: 13,
-              color: colorScheme.onSurfaceVariant,
-            ),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _error!,
+                textAlign: TextAlign.center,
+                style: textTheme.bodyMedium?.copyWith(
+                  fontSize: 13,
+                  height: 1.6,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _ResetButton(onTap: _reset, label: 'try again'),
+            ],
           ),
         ),
       );
@@ -437,9 +445,10 @@ class _GraphPanelState extends ConsumerState<GraphPanel>
 }
 
 class _ResetButton extends StatelessWidget {
-  const _ResetButton({required this.onTap});
+  const _ResetButton({required this.onTap, this.label = 'reset'});
 
   final VoidCallback onTap;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
@@ -458,7 +467,7 @@ class _ResetButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(5),
           ),
           child: Text(
-            'reset',
+            label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               fontSize: 11,
               color: colorScheme.onSurfaceVariant,

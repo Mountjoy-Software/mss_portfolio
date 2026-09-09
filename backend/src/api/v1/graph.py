@@ -6,10 +6,14 @@ from src.services import vectors
 router = APIRouter()
 
 
+async def _require_index() -> None:
+    if not await vectors.ensure_ready():
+        raise HTTPException(503, vectors.status())
+
+
 @router.get("/graph/seed")
 async def seed() -> dict:
-    if not vectors.ready():
-        raise HTTPException(503, "The index is still building. Try again shortly.")
+    await _require_index()
     return {"nodes": await vectors.seed(), "collection": vectors.COLLECTION}
 
 
@@ -18,9 +22,5 @@ async def expand(
     point_id: str,
     limit: int = Query(default=settings.GRAPH_EXPAND_LIMIT, ge=1, le=12),
 ) -> dict:
-    if not vectors.ready():
-        raise HTTPException(503, "The index is still building. Try again shortly.")
-    neighbours = await vectors.expand(point_id, limit)
-    if not neighbours:
-        return {"nodes": []}
-    return {"nodes": neighbours}
+    await _require_index()
+    return {"nodes": await vectors.expand(point_id, limit)}

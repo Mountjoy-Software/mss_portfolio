@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import time
 import uuid
 from functools import cache
 
@@ -33,6 +34,10 @@ MEMBERS = {
 }
 
 _ready = False
+_failure: str | None = None
+_last_attempt = 0.0
+_lock = asyncio.Lock()
+_RETRY_AFTER = 30.0
 
 
 @cache
@@ -45,6 +50,32 @@ def client() -> QdrantClient:
 
 
 def ready() -> bool:
+    return _ready
+
+
+def status() -> str:
+    if _ready:
+        return "ready"
+    if _failure:
+        return f"The vector index could not be built: {_failure}"
+    return "The vector index is still building. Try again shortly."
+
+
+async def ensure_ready() -> bool:
+    global _last_attempt
+    if _ready:
+        return True
+    async with _lock:
+        if _ready:
+            return True
+        now = time.monotonic()
+        if now - _last_attempt < _RETRY_AFTER:
+            return False
+        _last_attempt = now
+        try:
+            await ensure_index()
+        except Exception:
+            log.exception("index rebuild attempt failed")
     return _ready
 
 
@@ -68,6 +99,16 @@ def _create() -> None:
 
 
 async def ensure_index() -> None:
+    global _ready, _failure
+    try:
+        await _build()
+    except Exception as error:
+        _failure = f"{type(error).__name__}"
+        raise
+    _failure = None
+
+
+async def _build() -> None:
     global _ready
     docs = corpus.build(profile())
     fingerprint = corpus.fingerprint(docs)
@@ -173,6 +214,8 @@ async def expand(point_id: str, limit: int) -> list[dict]:
 
 async def context(question: str, limit: int) -> list[dict]:
     try:
+        if not await ensure_ready():
+            return []
         return await _context(question, limit)
     except Exception:
         log.exception("retrieval failed, answering without it")
@@ -180,8 +223,6 @@ async def context(question: str, limit: int) -> list[dict]:
 
 
 async def _context(question: str, limit: int) -> list[dict]:
-    if not _ready:
-        return []
     vector = await embeddings.embed(question)
     found = await asyncio.to_thread(
         client().query_points,
