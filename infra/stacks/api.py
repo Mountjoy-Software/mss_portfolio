@@ -1,4 +1,5 @@
 from aws_cdk import (
+    ArnFormat,
     CfnOutput,
     Duration,
     Stack,
@@ -8,6 +9,7 @@ from aws_cdk import (
     aws_ecr as ecr,
     aws_ecs as ecs,
     aws_elasticloadbalancingv2 as elbv2,
+    aws_iam as iam,
     aws_logs as logs,
     aws_route53 as route53,
     aws_route53_targets as targets,
@@ -25,6 +27,7 @@ class ApiStack(Stack):
         repository: ecr.IRepository,
         anthropic_secret: secretsmanager.ISecret,
         admin_secret: secretsmanager.ISecret,
+        qdrant_secret: secretsmanager.ISecret,
         domain: str,
         api_domain: str,
         zone_id: str,
@@ -97,6 +100,12 @@ class ApiStack(Stack):
                 "ADMIN_SESSION_SECRET": ecs.Secret.from_secrets_manager(
                     admin_secret, "session_secret"
                 ),
+                "QDRANT_URL": ecs.Secret.from_secrets_manager(
+                    qdrant_secret, "url"
+                ),
+                "QDRANT_API_KEY": ecs.Secret.from_secrets_manager(
+                    qdrant_secret, "api_key"
+                ),
             },
             logging=ecs.LogDrivers.aws_logs(
                 stream_prefix="api",
@@ -113,6 +122,21 @@ class ApiStack(Stack):
         )
 
         table.grant_read_write_data(task_definition.task_role)
+        task_definition.task_role.add_to_principal_policy(
+            iam.PolicyStatement(
+                actions=["bedrock:InvokeModel"],
+                resources=[
+                    Stack.of(self).format_arn(
+                        service="bedrock",
+                        region=self.region,
+                        account="",
+                        resource="foundation-model",
+                        resource_name="amazon.titan-embed-text-v2:0",
+                        arn_format=ArnFormat.SLASH_RESOURCE_NAME,
+                    )
+                ],
+            )
+        )
 
         alb_security_group = ec2.SecurityGroup(
             self,

@@ -24,6 +24,7 @@ api = ApiStack(
     repository=data.repository,
     anthropic_secret=data.anthropic_secret,
     admin_secret=data.admin_secret,
+    qdrant_secret=data.qdrant_secret,
     domain=domain,
     api_domain=api_domain,
     zone_id=zone_id,

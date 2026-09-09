@@ -51,6 +51,14 @@ class DataStack(Stack):
             removal_policy=RemovalPolicy.RETAIN,
         )
 
+        self.qdrant_secret = secretsmanager.Secret(
+            self,
+            "QdrantCredentials",
+            secret_name="mss-portfolio/qdrant",
+            description="Qdrant Cloud cluster URL and API key",
+            removal_policy=RemovalPolicy.RETAIN,
+        )
+
         self.admin_secret = secretsmanager.Secret(
             self,
             "AdminCredentials",
@@ -66,3 +74,4 @@ class DataStack(Stack):
         CfnOutput(self, "RepositoryUri", value=self.repository.repository_uri)
         CfnOutput(self, "AnthropicSecretArn", value=self.anthropic_secret.secret_arn)
         CfnOutput(self, "AdminSecretArn", value=self.admin_secret.secret_arn)
+        CfnOutput(self, "QdrantSecretArn", value=self.qdrant_secret.secret_arn)
