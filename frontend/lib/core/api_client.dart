@@ -29,6 +29,23 @@ class ApiClient {
     );
   }
 
+  Future<Resume> synthesizeResume(String audience) async {
+    final response = await _client.post(
+      _uri('/resume'),
+      headers: {'content-type': 'application/json'},
+      body: jsonEncode({'audience': audience}),
+    );
+    if (response.statusCode != 200) {
+      throw ApiException(
+        _detailOr(response, 'The resume could not be synthesized.'),
+        response.statusCode,
+      );
+    }
+    return Resume.fromJson(
+      jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>,
+    );
+  }
+
   Future<List<GraphNode>> graphSeed() => _nodes(_uri('/graph/seed'));
 
   Future<List<GraphNode>> expandNode(String id) =>
@@ -37,14 +54,10 @@ class ApiClient {
   Future<List<GraphNode>> _nodes(Uri uri) async {
     final response = await _client.get(uri);
     if (response.statusCode != 200) {
-      var message = 'The graph is unavailable.';
-      try {
-        final decoded = jsonDecode(utf8.decode(response.bodyBytes));
-        if (decoded is Map && decoded['detail'] is String) {
-          message = decoded['detail'] as String;
-        }
-      } catch (_) {}
-      throw ApiException(message, response.statusCode);
+      throw ApiException(
+        _detailOr(response, 'The graph is unavailable.'),
+        response.statusCode,
+      );
     }
     final decoded =
         jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
@@ -85,6 +98,16 @@ class ApiClient {
       }
     }
   }
+}
+
+String _detailOr(http.Response response, String fallback) {
+  try {
+    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+    if (decoded is Map && decoded['detail'] is String) {
+      return decoded['detail'] as String;
+    }
+  } catch (_) {}
+  return fallback;
 }
 
 Future<String> _detail(http.StreamedResponse response) async {

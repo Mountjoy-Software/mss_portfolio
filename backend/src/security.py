@@ -1,5 +1,7 @@
 import json
 
+from fastapi import Request
+
 from src.config import settings
 from src.services.dynamo import within_rate_limit
 
@@ -41,6 +43,13 @@ def client_ip(headers: dict[bytes, bytes] | None, fallback: str) -> str:
     if forwarded:
         return forwarded.decode(errors="replace").split(",")[0].strip()
     return fallback
+
+
+def request_ip(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
 
 
 def looks_hostile(path: str) -> bool:

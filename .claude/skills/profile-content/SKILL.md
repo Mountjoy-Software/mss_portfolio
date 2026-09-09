@@ -6,8 +6,9 @@ description: Edit the resume, work history, skills or project write-ups shown on
 # Editing site content
 
 Everything the site says about Ross lives in `backend/src/content/profile.json`. It is
-the only source. The API serves it at `/api/v1/profile`, the Flutter pages render it, and
-the assistant's system prompt is built from it in `src/services/claude.py`.
+the only source. The API serves it at `/api/v1/profile`, the Flutter pages render it, the
+assistant's system prompt is built from it in `src/services/claude.py`, and the
+synthesized PDF resume in `src/services/resume.py` selects from it.
 
 Do not add a second copy anywhere. If a page needs a new field, add it to the JSON, to
 the matching model in `frontend/lib/core/models.dart`, and to the page that renders it.

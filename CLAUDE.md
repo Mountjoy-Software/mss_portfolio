@@ -19,7 +19,7 @@ belongs to a different company.
 ## Layout
 
 ```
-backend/    FastAPI. src/api/v1 for routes, src/services for logic, src/content for profile data
+backend/    FastAPI. src/api/v1 for routes, src/api/mcp.py for the MCP endpoint, src/services for logic, src/content for profile data
 frontend/   Flutter web. lib/core shared, lib/features per page, lib/theme
 infra/      CDK app. app.py wires four stacks from stacks/
 scripts/    push-image.sh builds and pushes the API image
@@ -60,4 +60,35 @@ byte-identical across requests. Retrieved context goes into the user turn, not t
 system prompt. Follow-up suggestions come from `claude-haiku-4-5` on a separate call.
 
 Portfolio content is embedded with Amazon Bedrock Titan and indexed in Qdrant, which
-serves both retrieval for the assistant and the graph explorer.
+serves retrieval for the assistant, the graph explorer, and the MCP server.
+
+`src/api/mcp.py` implements the Streamable HTTP transport by hand, unauthenticated, at
+`/mcp`. CloudFront routes `/mcp*` to the API alongside `/api/*`. Retrieval caps results
+per kind so a broad question does not come back as six near-identical skill points.
+
+## Resume
+
+`/synthesize-resume <who is this for>` and the assistant's `synthesize_resume` tool both
+land in `src/services/resume.py`. It asks `claude-sonnet-5` for a structured selection
+from the record, then renders one page with reportlab. Role ids, project slugs and skill
+names that do not match `profile.json` are dropped in `_reconcile`, so the prose is the
+model's and the facts are the record's.
+
+`POST /api/v1/resume` synthesizes and caches, `GET /api/v1/resume.pdf?for=...` renders
+and synthesizes on a miss. The cache is in process, so another task just synthesizes
+again.
+
+Structured output goes through `messages.parse`. Sonnet 5 thinks whether or not thinking
+is asked for, and the thinking comes out of the same budget as the JSON: at 4000 tokens
+the call returns `stop_reason` `max_tokens` and `parsed_output` `None`.
+
+One page is a promise, so `_fit` measures the story and drops bullets, then projects,
+then skills, until it fits. `KeepInFrame` is the last resort, and because shrinking
+re-wraps at a wider width every table has to be `hAlign="LEFT"` or it drifts right.
+
+JetBrains Mono and the logo live in `backend/src/assets`; the frontend gets the same
+typeface from Google Fonts at runtime.
+
+The download is a markdown link, so it must not reach `context.go` or the SPA router
+swallows it. `streaming_markdown.dart` hands `/api/` and `/media/` hrefs to `launchUrl`
+instead.

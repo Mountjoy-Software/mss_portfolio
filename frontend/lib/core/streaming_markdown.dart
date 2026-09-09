@@ -103,6 +103,10 @@ class StreamingMarkdown extends StatelessWidget {
           MarkdownImage(src: uri.toString(), caption: alt ?? title),
       onTapLink: (_, href, _) {
         if (href == null) return;
+        if (href.startsWith('/api/') || href.startsWith('/media/')) {
+          launchUrl(Uri.parse(resolveMedia(href)));
+          return;
+        }
         if (href.startsWith('/')) {
           context.go(href);
           return;

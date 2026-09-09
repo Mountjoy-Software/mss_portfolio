@@ -165,6 +165,15 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
         setState(() => _bubbles = randomPrompts(4));
         return;
       }
+      if (token == '/synthesize-resume') {
+        final audience = commandRest(trimmed);
+        if (audience.isEmpty) {
+          controller.runCommand(trimmed, resumeUsage());
+        } else {
+          controller.synthesizeResume(trimmed, audience);
+        }
+        return;
+      }
       const graphs = {
         '/about': 'about',
         '/projects': 'projects',
@@ -187,6 +196,7 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
     if (token == '/help') return helpReply();
     if (token == '/set-theme') return _applyTheme(commandArgument(input));
     if (token == '/architecture') return architectureReply();
+    if (token == '/mcp') return mcpReply(ApiClient.baseUrl);
 
     final profile = ref.read(profileProvider).value;
     if (token == '/contact') {

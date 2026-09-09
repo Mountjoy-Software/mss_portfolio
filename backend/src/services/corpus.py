@@ -26,8 +26,21 @@ class Doc:
         return str(uuid.uuid5(_NAMESPACE, self.key))
 
 
+def _usage(profile: dict) -> dict[str, list[str]]:
+    used: dict[str, list[str]] = {}
+    for project in profile.get("projects") or []:
+        for item in project.get("stack") or []:
+            used.setdefault(item, []).append(project["name"])
+    for role in profile.get("experience") or []:
+        for item in role.get("stack") or []:
+            where = f"{role.get('role', '')} at {role.get('company', '')}"
+            used.setdefault(item, []).append(where)
+    return used
+
+
 def _skill_docs(profile: dict) -> list[Doc]:
     docs = []
+    used = _usage(profile)
     for group, items in (profile.get("skills") or {}).items():
         label = group.replace("_", " ")
         docs.append(
@@ -47,11 +60,28 @@ def _skill_docs(profile: dict) -> list[Doc]:
                     key=f"skill:{group}:{item}",
                     kind="skill",
                     title=item,
-                    text=f"{item}. A skill Ross Mountjoy works with, in {label}.",
-                    payload={"group": group},
+                    text=" ".join(
+                        part
+                        for part in (
+                            f"{item}. A skill Ross Mountjoy works with, in "
+                            f"{label}.",
+                            f"He has used it on {_and(used[item])}."
+                            if used.get(item)
+                            else None,
+                        )
+                        if part
+                    ),
+                    payload={"group": group, "used_on": used.get(item) or []},
                 )
             )
     return docs
+
+
+def _and(names: list[str]) -> str:
+    unique = list(dict.fromkeys(names))
+    if len(unique) == 1:
+        return unique[0]
+    return ", ".join(unique[:-1]) + f" and {unique[-1]}"
 
 
 def _project_docs(profile: dict) -> list[Doc]:

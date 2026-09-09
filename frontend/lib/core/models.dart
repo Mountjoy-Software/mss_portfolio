@@ -134,6 +134,27 @@ class Project {
   );
 }
 
+class Resume {
+  const Resume({
+    required this.audience,
+    required this.headline,
+    required this.positioning,
+    required this.url,
+  });
+
+  final String audience;
+  final String headline;
+  final String positioning;
+  final String url;
+
+  factory Resume.fromJson(Map<String, dynamic> json) => Resume(
+    audience: json['audience'] as String? ?? '',
+    headline: json['headline'] as String? ?? '',
+    positioning: json['positioning'] as String? ?? '',
+    url: json['url'] as String,
+  );
+}
+
 enum ChatEventKind { token, tool, done, error }
 
 class ChatEvent {

@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     CHAT_MODEL: str = "claude-sonnet-5"
     SUGGEST_MODEL: str = "claude-haiku-4-5-20251001"
     CHAT_MAX_TOKENS: int = 8000
+    RESUME_MODEL: str = "claude-sonnet-5"
+    RESUME_MAX_TOKENS: int = 8000
+    RESUME_CONTEXT_LIMIT: int = 8
 
     QDRANT_URL: str = "http://localhost:6333"
     QDRANT_API_KEY: str = ""
@@ -26,12 +29,16 @@ class Settings(BaseSettings):
     CHAT_RATE_LIMIT: int = 15
     CHAT_RATE_WINDOW_SECONDS: int = 60
     CHAT_HOURLY_LIMIT: int = 100
+    RESUME_RATE_LIMIT: int = 10
+    RESUME_RATE_WINDOW_SECONDS: int = 3600
     API_RATE_LIMIT: int = 60
     API_RATE_WINDOW_SECONDS: int = 60
     MAX_BODY_BYTES: int = 65536
     IP_HASH_SALT: str = "local-dev-salt"
 
     CORS_ORIGINS: list[str] = []
+    MCP_ORIGINS: list[str] = ["https://mountjoy.io", "https://www.mountjoy.io"]
+    CONTACT_EMAIL: str = "ross.mountjoy.carr@pm.me"
 
     class Config:
         env_file = ".env"

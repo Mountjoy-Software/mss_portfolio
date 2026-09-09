@@ -3,19 +3,14 @@ import json
 import logging
 from typing import AsyncIterator
 
-from anthropic import (
-    APIConnectionError,
-    APIStatusError,
-    AsyncAnthropic,
-    RateLimitError,
-)
+from anthropic import APIConnectionError, APIStatusError, RateLimitError
 
 from src.config import settings
 from src.content import profile
+from src.services import resume
+from src.services.llm import client
 
 log = logging.getLogger(__name__)
-
-_client: AsyncAnthropic | None = None
 
 TOOLS = [
     {
@@ -37,7 +32,37 @@ TOOLS = [
             "additionalProperties": False,
         },
         "strict": True,
-    }
+    },
+    {
+        "name": "synthesize_resume",
+        "description": (
+            "Synthesize a one-page PDF resume for Ross from his record, written for "
+            "one particular reader, and get back a link the visitor can download. "
+            "Call this whenever a visitor asks to download, view, generate or see "
+            "his resume or CV. Never answer that kind of request with prose alone, "
+            "and never ask who it is for before calling: infer the reader from the "
+            "conversation, and where there is nothing to go on pass a general "
+            "reader and invite them afterwards to name a specific one."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "audience": {
+                    "type": "string",
+                    "description": (
+                        "Who the resume is for, as a short phrase, for example "
+                        "'a fintech CTO hiring a backend contractor' or 'a recruiter "
+                        "filling a senior Flutter role'. Use the visitor's own words "
+                        "where they gave them, and 'a hiring manager or prospective "
+                        "client' where they gave nothing."
+                    ),
+                }
+            },
+            "required": ["audience"],
+            "additionalProperties": False,
+        },
+        "strict": True,
+    },
 ]
 
 
@@ -133,13 +158,6 @@ SYSTEM_PROMPT = _system_prompt()
 FOLLOW_UP_SYSTEM = _follow_up_system()
 
 
-def client() -> AsyncAnthropic:
-    global _client
-    if _client is None:
-        _client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
-    return _client
-
-
 async def _follow_up(question: str) -> str | None:
     try:
         reply = await client().messages.create(
@@ -158,15 +176,43 @@ async def _follow_up(question: str) -> str | None:
     return text if 0 < len(text) <= 100 else None
 
 
-def _run_tool(name: str, args: dict) -> str:
-    if name != "get_project_detail":
-        return f"No such tool: {name}"
-    slug = args.get("slug")
+def _project_detail(slug: str) -> str:
     for x in profile()["projects"]:
         if x["slug"] == slug:
             return x.get("details") or x["blurb"]
     known = ", ".join(x["slug"] for x in profile()["projects"])
     return f"No project with slug {slug!r}. Known slugs: {known}"
+
+
+async def _synthesize_resume(audience: str) -> str:
+    audience = resume.normalize(audience)
+    try:
+        synth = await resume.for_audience(audience)
+    except Exception:
+        log.exception("resume synthesis failed")
+        return (
+            "The resume could not be synthesized. Tell the visitor to try again "
+            "shortly, or to email for one."
+        )
+    return f"""A one-page PDF is ready, written for {audience}.
+
+Headline: {synth.headline}
+Opening: {synth.positioning}
+Download path: {resume.download_path(audience)}
+
+Say in one or two sentences who it is aimed at and what it leads with, then offer the
+download as a markdown link with the path exactly as written above, like
+[Download the PDF]({resume.download_path(audience)}). Never paste the path as bare
+text. Mention that it was synthesized just now and that a different reader gets a
+different resume."""
+
+
+async def _run_tool(name: str, args: dict) -> str:
+    if name == "get_project_detail":
+        return _project_detail(args.get("slug"))
+    if name == "synthesize_resume":
+        return await _synthesize_resume(args.get("audience") or "a hiring manager")
+    return f"No such tool: {name}"
 
 
 def _sse(event: str, **data) -> str:
@@ -275,7 +321,7 @@ async def _stream_turns(
                     {
                         "type": "tool_result",
                         "tool_use_id": block.id,
-                        "content": _run_tool(block.name, block.input),
+                        "content": await _run_tool(block.name, block.input),
                     }
                 )
 

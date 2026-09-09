@@ -107,6 +107,23 @@ class SiteStack(Stack):
             runtime=cloudfront.FunctionRuntime.JS_2_0,
         )
 
+        api_origin = origins.HttpOrigin(
+            api_domain,
+            protocol_policy=cloudfront.OriginProtocolPolicy.HTTPS_ONLY,
+            read_timeout=Duration.seconds(60),
+            keepalive_timeout=Duration.seconds(60),
+            origin_id="ApiOrigin",
+        )
+        api_behavior = cloudfront.BehaviorOptions(
+            origin=api_origin,
+            viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+            allowed_methods=cloudfront.AllowedMethods.ALLOW_ALL,
+            cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
+            origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
+            response_headers_policy=security_headers,
+            compress=False,
+        )
+
         self.distribution = cloudfront.Distribution(
             self,
             "Distribution",
@@ -138,21 +155,8 @@ class SiteStack(Stack):
                 )
             ],
             additional_behaviors={
-                "/api/*": cloudfront.BehaviorOptions(
-                    origin=origins.HttpOrigin(
-                        api_domain,
-                        protocol_policy=cloudfront.OriginProtocolPolicy.HTTPS_ONLY,
-                        read_timeout=Duration.seconds(60),
-                        keepalive_timeout=Duration.seconds(60),
-                        origin_id="ApiOrigin",
-                    ),
-                    viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-                    allowed_methods=cloudfront.AllowedMethods.ALLOW_ALL,
-                    cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
-                    origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
-                    response_headers_policy=security_headers,
-                    compress=False,
-                )
+                "/api/*": api_behavior,
+                "/mcp*": api_behavior,
             },
         )
 

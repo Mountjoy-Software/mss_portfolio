@@ -17,7 +17,13 @@ const slashCommands = [
   SlashCommand('/experience', 'Where he has worked and what shipped'),
   SlashCommand('/skills', 'Languages, frameworks and infrastructure'),
   SlashCommand('/architecture', 'The AWS diagram behind this site'),
+  SlashCommand('/mcp', 'Connect your own agent to this site over MCP'),
   SlashCommand('/contact', 'How to get in touch'),
+  SlashCommand(
+    '/synthesize-resume',
+    'A one-page PDF resume, written for one reader',
+    argHint: 'who is this for',
+  ),
   SlashCommand('/clear', 'Clear the transcript and start over'),
   SlashCommand(
     '/set-theme',
@@ -35,10 +41,12 @@ List<SlashCommand> matchingCommands(String input) {
   return slashCommands.where((c) => c.name.startsWith(typed)).toList();
 }
 
-String commandArgument(String input) {
+String commandRest(String input) {
   final parts = input.trim().split(RegExp(r'\s+'));
-  return parts.length > 1 ? parts.sublist(1).join(' ').toLowerCase() : '';
+  return parts.length > 1 ? parts.sublist(1).join(' ') : '';
 }
+
+String commandArgument(String input) => commandRest(input).toLowerCase();
 
 String helpReply() {
   final rows = slashCommands
@@ -60,6 +68,32 @@ does not cover something it will say so rather than guess.
 ''';
 }
 
+String resumeUsage() {
+  return '''
+Usage: `/synthesize-resume <who is this for>`
+
+Say who is going to read it and the resume gets written for them. For example:
+
+- `/synthesize-resume a fintech CTO hiring a backend contractor`
+- `/synthesize-resume a recruiter filling a senior Flutter role`
+- `/synthesize-resume the founder of a two person startup`
+''';
+}
+
+String resumeReply(Resume resume) {
+  return '''
+### ${resume.headline}
+
+Synthesized for **${resume.audience}**.
+
+${resume.positioning}
+
+[Download the PDF](${resume.url}) — one page, written just now from the same indexed
+record this assistant answers from. Name a different reader and you get a different
+resume.
+''';
+}
+
 String architectureReply() {
   return '''
 ![Production architecture for mountjoy.io](/media/mss-portfolio/architecture.png)
@@ -77,6 +111,44 @@ indexed in Qdrant, which grounds this assistant and drives the graph you get fro
 
 Full write-up in [this site's deck](/deck/mss-portfolio).
 ''';
+}
+
+String mcpReply(String origin) {
+  return """
+This site runs an MCP server, so you can point your own agent at Ross's record
+instead of reading it here. One tool, `search_ross_mountjoy`, embeds your
+question and matches it against the same Qdrant collection the assistant on this
+page uses. No key, no account, no auth.
+
+**Claude Code**
+
+```bash
+claude mcp add --transport http mountjoy $origin/mcp
+```
+
+**Anything else**
+
+Streamable HTTP transport, endpoint `$origin/mcp`. Most clients take a JSON
+config shaped like this:
+
+```json
+{
+  "mcpServers": {
+    "mountjoy": {
+      "type": "http",
+      "url": "$origin/mcp"
+    }
+  }
+}
+```
+
+Then ask it something like *what has Ross done with ECS* and it will call the
+tool. Passages come back with the repository, live URL and write-up links where
+the record has them, so the agent can cite and follow them.
+
+The server speaks the current spec revision and falls back for clients that
+still open with `initialize`. Source is in `backend/src/api/mcp.py`.
+""";
 }
 
 String contactReply(Profile profile) {

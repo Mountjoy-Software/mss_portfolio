@@ -19,6 +19,7 @@ const suggestedPrompts = [
   'What does he know about RAG?',
   'Where is he based?',
   'Show me a project with screenshots.',
+  'Can I get his resume for a backend role?',
 ];
 
 List<String> randomPrompts(int count) {

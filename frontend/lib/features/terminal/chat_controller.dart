@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_client.dart';
 import '../../core/models.dart';
+import 'commands.dart';
 
 class ChatState {
   const ChatState({
@@ -63,6 +64,39 @@ class ChatController extends Notifier<ChatState> {
       ],
       clearTool: true,
     );
+  }
+
+  Future<void> synthesizeResume(String input, String audience) async {
+    if (state.streaming) return;
+
+    final pending = ChatTurn(role: 'assistant', content: '');
+    state = state.copyWith(
+      turns: [
+        ...state.turns,
+        ChatTurn(role: 'user', content: input.trim()),
+        pending,
+      ],
+      streaming: true,
+      toolActivity: 'synthesize_resume',
+      clearSuggestion: true,
+    );
+
+    try {
+      final resume = await ref
+          .read(apiClientProvider)
+          .synthesizeResume(audience);
+      pending.content = resumeReply(resume);
+    } on ApiException catch (error) {
+      pending.content = error.message;
+    } catch (_) {
+      pending.content = 'Could not reach the assistant.';
+    } finally {
+      state = state.copyWith(
+        turns: [...state.turns],
+        streaming: false,
+        clearTool: true,
+      );
+    }
   }
 
   Future<void> send(String message) async {

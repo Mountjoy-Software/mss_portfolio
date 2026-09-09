@@ -310,10 +310,10 @@ async def _context(question: str, limit: int) -> list[dict]:
                 FieldCondition(key="kind", match=MatchAny(any=["category", "meta"]))
             ]
         ),
-        limit=limit,
+        limit=min(limit * 4, 60),
         with_payload=True,
     )
-    return [
+    hits = [
         {
             "kind": (hit.payload or {}).get("kind"),
             "title": (hit.payload or {}).get("title"),
@@ -322,6 +322,21 @@ async def _context(question: str, limit: int) -> list[dict]:
         }
         for hit in found.points
     ]
+    return _diversified(hits, limit)
+
+
+def _diversified(hits: list[dict], limit: int) -> list[dict]:
+    cap = max(2, limit // 3)
+    counts: dict[str, int] = {}
+    kept, spare = [], []
+    for hit in hits:
+        kind = hit["kind"]
+        if counts.get(kind, 0) < cap:
+            counts[kind] = counts.get(kind, 0) + 1
+            kept.append(hit)
+        else:
+            spare.append(hit)
+    return (kept + spare)[:limit]
 
 
 def _with_references(payload: dict) -> str:

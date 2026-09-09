@@ -3,6 +3,7 @@ from fastapi.responses import StreamingResponse
 
 from src.config import settings
 from src.schemas.chat import ChatRequest
+from src.security import request_ip
 from src.services import claude, dynamo, vectors
 
 router = APIRouter()
@@ -14,16 +15,9 @@ TOO_MUCH = (
 )
 
 
-def _client_ip(request: Request) -> str:
-    forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    return request.client.host if request.client else "unknown"
-
-
 @router.post("/chat")
 async def chat(body: ChatRequest, request: Request) -> StreamingResponse:
-    ip = _client_ip(request)
+    ip = request_ip(request)
 
     if not await dynamo.within_rate_limit(
         "chat", ip, settings.CHAT_RATE_LIMIT, settings.CHAT_RATE_WINDOW_SECONDS

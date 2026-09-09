@@ -5,6 +5,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.api import mcp
 from src.api.v1 import api_router
 from src.config import settings
 from src.security import Guard
@@ -40,6 +41,7 @@ if settings.CORS_ORIGINS:
     )
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
+app.include_router(mcp.router, tags=["mcp"])
 
 app.add_middleware(Guard)
 

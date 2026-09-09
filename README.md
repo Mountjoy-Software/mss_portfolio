@@ -10,6 +10,7 @@ infrastructure is part of what it's meant to show.
 - **LLM**: Anthropic Claude (streaming, tool use, prompt caching)
 - **Infra**: AWS CDK in Python
 - **CI**: GitHub Actions with OIDC
+- **MCP**: an MCP server at `/mcp`, one tool over the vector index
 
 ## Infrastructure
 
@@ -39,6 +40,20 @@ Four stacks:
 | `MssPortfolioApi` | VPC, ECS cluster, Fargate service, ALB |
 | `MssPortfolioSite` | S3 bucket, CloudFront, certificate, DNS |
 | `MssPortfolioCicd` | GitHub OIDC provider and deploy role |
+
+## MCP server
+
+`https://mountjoy.io/mcp` speaks the Streamable HTTP transport with no auth, so any
+agent can query the same vector index the site's assistant uses:
+
+```bash
+claude mcp add --transport http mountjoy https://mountjoy.io/mcp
+```
+
+One tool, `search_ross_mountjoy`, takes a plain-language query, embeds it and returns
+the matching passages with their repository, live and write-up links. The transport is
+hand-written in `backend/src/api/mcp.py` against the current spec revision, with a
+fallback for clients that still open with `initialize`.
 
 ## Layout
 
