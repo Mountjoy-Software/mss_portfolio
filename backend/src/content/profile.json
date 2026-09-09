@@ -6,7 +6,7 @@
   "email": "ross.mountjoy.carr@pm.me",
   "links": {
     "github": "https://github.com/rmountjoy92",
-    "linkedin": "https://www.linkedin.com/in/ross-mountjoy-a48a151b7"
+    "linkedin": "https://www.linkedin.com/in/ross-mountjoy-a48a151b7/"
   },
   "summary": "Self-taught full-stack developer with over ten years of experience building and scaling web applications, from system architecture and backend APIs through frontend UI and the infrastructure underneath. The last few years have gone deep on AI integration: building against the Anthropic and OpenAI APIs, writing Claude Code extensions and MCP servers, wiring agents into real services through OpenAPI specs, and running local models with Ollama for private inference. Came into the field through personal projects and open source, including Home Assistant and DashMachine, which has passed 11 million Docker Hub pulls.",
   "skills": {
@@ -57,6 +57,13 @@
       "vector search",
       "Amazon Bedrock embeddings",
       "Ollama"
+    ],
+    "design and marketing": [
+      "Graphic design",
+      "Business systems",
+      "Online marketing",
+      "Google Ads",
+      "SEO"
     ]
   },
   "experience": [
@@ -99,6 +106,23 @@
         "Vue.js",
         "AWS"
       ]
+    },
+    {
+      "company": "Keller Williams",
+      "role": "Realtor",
+      "start": "2014",
+      "end": "2018",
+      "highlights": [
+        "Served buyers and sellers across the DC Metro area.",
+        "Specialised in the business side of the job: graphic design, business systems, online marketing, Google Ads and SEO.",
+        "Consulted for other agents in the area on the same things, which is where the software career started."
+      ],
+      "stack": [
+        "Graphic design",
+        "Google Ads",
+        "SEO",
+        "Online marketing"
+      ]
     }
   ],
   "projects": [
@@ -140,6 +164,34 @@
       "public": false
     },
     {
+      "slug": "pip",
+      "name": "Pip",
+      "blurb": "The predecessor to Gem. An OpenAI-backed assistant living on a Raspberry Pi with a 3 inch display, in a 3D-printed case mounted on the kitchen wall.",
+      "details": "Pip was the first attempt at the idea Gem now does properly: a household assistant that is a physical object rather than an app. A Raspberry Pi behind a 3 inch display, in a case designed and printed for it, bolted to the kitchen wall with a camera and a shotgun microphone above it. Idle, it showed a pair of eyes with the temperature and time; spoken to, it answered through the OpenAI API.\n\nTwo repositories: a Python backend and a separate frontend for the display. Everything Gem got right about being local and owned came out of what Pip got wrong by depending on somebody else's API.",
+      "stack": [
+        "Python",
+        "OpenAI API",
+        "Raspberry Pi",
+        "3D printing"
+      ],
+      "public": true,
+      "repo": "https://github.com/rmountjoy92/Pip2",
+      "media": [
+        {
+          "src": "/media/pip/2.jpg",
+          "caption": "Mounted on the kitchen wall, camera and microphone above the display."
+        },
+        {
+          "src": "/media/pip/3.jpg",
+          "caption": "The 3D-printed case from another angle."
+        },
+        {
+          "src": "/media/pip/1.jpg",
+          "caption": "The display on the bench during the build, showing the idle eyes, temperature and time."
+        }
+      ]
+    },
+    {
       "slug": "dashmachine",
       "name": "DashMachine",
       "blurb": "Self-hosted application dashboard and bookmark manager. 1,265 GitHub stars and 11.3 million Docker Hub pulls.",
@@ -151,7 +203,25 @@
         "JavaScript"
       ],
       "public": true,
-      "repo": "https://github.com/rmountjoy92/DashMachine"
+      "repo": "https://github.com/rmountjoy92/DashMachine",
+      "media": [
+        {
+          "src": "/media/dashmachine/1.jpg",
+          "caption": "The dashboard with application cards."
+        },
+        {
+          "src": "/media/dashmachine/2.jpg",
+          "caption": "Card configuration."
+        },
+        {
+          "src": "/media/dashmachine/3.jpg",
+          "caption": "Settings and theming."
+        },
+        {
+          "src": "/media/dashmachine/4.jpg",
+          "caption": "Data sources feeding the cards."
+        }
+      ]
     },
     {
       "slug": "vectorcloud",
@@ -182,6 +252,17 @@
       ],
       "public": true,
       "repo": "https://github.com/Mountjoy-Software/mss_portfolio"
+    }
+  ],
+  "photo": "/media/profile.jpg",
+  "about": {
+    "citizenship": "US citizen",
+    "birthplace": "Virginia"
+  },
+  "education": [
+    {
+      "school": "Portland State University",
+      "field": "Graphic design"
     }
   ]
 }

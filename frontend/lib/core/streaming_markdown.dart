@@ -1,6 +1,81 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+import 'api_client.dart';
+
+String resolveMedia(String path) =>
+    Uri.parse(path).hasScheme ? path : '${ApiClient.baseUrl}$path';
+
+class MarkdownImage extends StatelessWidget {
+  const MarkdownImage({required this.src, this.caption, super.key});
+
+  final String src;
+  final String? caption;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: Image.network(
+              resolveMedia(src),
+              fit: BoxFit.contain,
+              errorBuilder: (context, _, _) => Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: colorScheme.outlineVariant),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  'image unavailable',
+                  style: textTheme.bodySmall?.copyWith(
+                    fontSize: 11,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              loadingBuilder: (context, child, progress) => progress == null
+                  ? child
+                  : SizedBox(
+                      height: 120,
+                      child: Center(
+                        child: SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                    ),
+            ),
+          ),
+          if (caption != null && caption!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                caption!,
+                style: textTheme.bodySmall?.copyWith(
+                  fontSize: 11,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
 
 class StreamingMarkdown extends StatelessWidget {
   const StreamingMarkdown({
@@ -24,8 +99,15 @@ class StreamingMarkdown extends StatelessWidget {
       data: content,
       selectable: selectable,
       styleSheet: styleSheet,
+      imageBuilder: (uri, title, alt) =>
+          MarkdownImage(src: uri.toString(), caption: alt ?? title),
       onTapLink: (_, href, _) {
-        if (href != null) launchUrl(Uri.parse(href));
+        if (href == null) return;
+        if (href.startsWith('/')) {
+          context.go(href);
+          return;
+        }
+        launchUrl(Uri.parse(href));
       },
     );
     if (!isStreaming) return markdown;

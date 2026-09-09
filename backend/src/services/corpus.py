@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 _NAMESPACE = uuid.UUID("6f3d9a4e-7c21-4f0b-9b1e-2a5d8c7f4e10")
 
 CATEGORIES = {
+    "about": "Who Ross Mountjoy is, where he is from and how he trained.",
     "projects": "Software Ross Mountjoy has designed and built end to end.",
     "experience": "Roles Ross Mountjoy has held and what shipped in them.",
     "skills": "Languages, frameworks and infrastructure Ross Mountjoy works with.",
@@ -66,6 +67,8 @@ def _project_docs(profile: dict) -> list[Doc]:
                     "stack": project.get("stack") or [],
                     "repo": project.get("repo"),
                     "url": project.get("url"),
+                    "deck": f"/deck/{project['slug']}",
+                    "media": [m["src"] for m in project.get("media") or []],
                 },
             )
         )
@@ -119,6 +122,44 @@ def _experience_docs(profile: dict) -> list[Doc]:
     return docs
 
 
+def _about_docs(profile: dict) -> list[Doc]:
+    about = profile.get("about") or {}
+    docs = []
+    facts = [
+        f"{profile['name']} is based in {profile.get('location', '')}." if profile.get("location") else None,
+        f"He is a {about['citizenship']}." if about.get("citizenship") else None,
+        f"He was born in {about['birthplace']}." if about.get("birthplace") else None,
+    ]
+    biography = " ".join(f for f in facts if f)
+    if biography or profile.get("summary"):
+        docs.append(
+            Doc(
+                key="about:bio",
+                kind="bio",
+                title=f"About {profile['name']}",
+                text=f"{biography}\n\n{profile.get('summary', '')}".strip(),
+                payload={
+                    "location": profile.get("location"),
+                    "citizenship": about.get("citizenship"),
+                    "birthplace": about.get("birthplace"),
+                    "media": [profile["photo"]] if profile.get("photo") else [],
+                    **{k: v for k, v in (profile.get("links") or {}).items()},
+                },
+            )
+        )
+    for school in profile.get("education") or []:
+        docs.append(
+            Doc(
+                key=f"education:{school['school']}",
+                kind="education",
+                title=f"{school['school']}",
+                text=f"{profile['name']} studied {school.get('field', '')} at {school['school']}.",
+                payload={"field": school.get("field")},
+            )
+        )
+    return docs
+
+
 def build(profile: dict) -> list[Doc]:
     docs = [
         Doc(
@@ -130,6 +171,7 @@ def build(profile: dict) -> list[Doc]:
         )
         for name, description in CATEGORIES.items()
     ]
+    docs += _about_docs(profile)
     docs += _project_docs(profile)
     docs += _experience_docs(profile)
     docs += _skill_docs(profile)

@@ -66,9 +66,10 @@ String contactReply(Profile profile) {
       .map((e) => '- ${e.key}: <${e.value}>')
       .join('\n');
   return '''
-**Contact**
+![${profile.name}](/media/profile.jpg)
 
-${profile.name}, ${profile.business}
+**${profile.name}** — ${profile.business}
+
 ${profile.location}
 
 Email: <${profile.email}>

@@ -79,6 +79,18 @@ class Experience {
   );
 }
 
+class MediaShot {
+  const MediaShot({required this.src, required this.caption});
+
+  final String src;
+  final String caption;
+
+  factory MediaShot.fromJson(Map<String, dynamic> json) => MediaShot(
+    src: json['src'] as String,
+    caption: json['caption'] as String? ?? '',
+  );
+}
+
 class Project {
   const Project({
     required this.slug,
@@ -88,6 +100,7 @@ class Project {
     required this.stack,
     required this.repo,
     required this.url,
+    required this.media,
   });
 
   final String slug;
@@ -97,6 +110,7 @@ class Project {
   final List<String> stack;
   final String? repo;
   final String? url;
+  final List<MediaShot> media;
 
   factory Project.fromJson(Map<String, dynamic> json) => Project(
     slug: json['slug'] as String,
@@ -108,6 +122,9 @@ class Project {
         .toList(),
     repo: json['repo'] as String?,
     url: json['url'] as String?,
+    media: (json['media'] as List<dynamic>? ?? [])
+        .map((e) => MediaShot.fromJson(e as Map<String, dynamic>))
+        .toList(),
   );
 }
 

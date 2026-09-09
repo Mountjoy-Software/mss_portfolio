@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_client.dart';
@@ -691,8 +692,28 @@ class _Inspector extends StatelessWidget {
                 style: mono,
                 muted: muted,
               ),
+            if (current.payload['deck'] != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () =>
+                        context.go('${current.payload['deck']}'),
+                    child: Text(
+                      'open the full write-up >',
+                      style: mono?.copyWith(
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             for (final entry in current.payload.entries)
-              if (entry.value != null && '${entry.value}'.isNotEmpty)
+              if (entry.key != 'deck' &&
+                  entry.value != null &&
+                  '${entry.value}'.isNotEmpty)
                 _Row(
                   label: entry.key,
                   value: entry.value is List

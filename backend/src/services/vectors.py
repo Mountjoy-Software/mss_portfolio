@@ -26,6 +26,7 @@ COLLECTION = "portfolio"
 _META_ID = str(uuid.uuid5(uuid.NAMESPACE_URL, "mss:portfolio:meta"))
 
 MEMBERS = {
+    "about": ["bio", "education"],
     "projects": ["project"],
     "experience": ["role"],
     "skills": ["skill"],
@@ -198,8 +199,19 @@ async def _context(question: str, limit: int) -> list[dict]:
         {
             "kind": (hit.payload or {}).get("kind"),
             "title": (hit.payload or {}).get("title"),
-            "text": (hit.payload or {}).get("text"),
+            "text": _with_references(hit.payload or {}),
             "score": hit.score,
         }
         for hit in found.points
     ]
+
+
+def _with_references(payload: dict) -> str:
+    lines = [payload.get("text") or ""]
+    for label, key in (("Repository", "repo"), ("Live", "url"), ("Deck", "deck")):
+        if payload.get(key):
+            lines.append(f"{label}: {payload[key]}")
+    media = payload.get("media") or []
+    if media:
+        lines.append("Images: " + ", ".join(media))
+    return "\n".join(lines)
