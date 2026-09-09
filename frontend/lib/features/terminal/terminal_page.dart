@@ -126,6 +126,7 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
         return;
       }
       const graphs = {
+        '/about': 'about',
         '/projects': 'projects',
         '/experience': 'experience',
         '/skills': 'skills',
