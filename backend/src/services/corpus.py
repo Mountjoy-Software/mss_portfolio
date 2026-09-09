@@ -54,7 +54,9 @@ def _project_docs(profile: dict) -> list[Doc]:
                 text="\n".join(
                     part
                     for part in (
-                        project["name"],
+                        f"{project['name']}, started {project['year']}."
+                        if project.get("year")
+                        else project["name"],
                         project.get("blurb"),
                         project.get("details"),
                         f"Built with {stack}." if stack else None,
@@ -63,6 +65,7 @@ def _project_docs(profile: dict) -> list[Doc]:
                 ),
                 payload={
                     "slug": project["slug"],
+                    "year": project.get("year"),
                     "blurb": project.get("blurb", ""),
                     "stack": project.get("stack") or [],
                     "repo": project.get("repo"),
@@ -93,6 +96,9 @@ def _experience_docs(profile: dict) -> list[Doc]:
                     part
                     for part in (
                         f"{title} at {company}, {period}.",
+                        f"{company} is at {role['url']}."
+                        if role.get("url")
+                        else None,
                         *(role.get("highlights") or []),
                         f"Worked with {stack}." if stack else None,
                     )
@@ -100,6 +106,7 @@ def _experience_docs(profile: dict) -> list[Doc]:
                 ),
                 payload={
                     "company": company,
+                    "url": role.get("url"),
                     "role": title,
                     "period": period,
                     "highlights": role.get("highlights") or [],

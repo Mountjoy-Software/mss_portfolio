@@ -1,11 +1,44 @@
 import 'package:flutter/material.dart';
 
+class GhostController extends TextEditingController {
+  String ghost = '';
+
+  @override
+  TextSpan buildTextSpan({
+    required BuildContext context,
+    TextStyle? style,
+    required bool withComposing,
+  }) {
+    final typed = super.buildTextSpan(
+      context: context,
+      style: style,
+      withComposing: withComposing,
+    );
+    if (ghost.isEmpty) return typed;
+    return TextSpan(
+      style: style,
+      children: [
+        typed,
+        TextSpan(
+          text: ghost,
+          style: style?.copyWith(
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurfaceVariant.withValues(alpha: 0.55),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class PromptBar extends StatelessWidget {
   const PromptBar({
     required this.controller,
     required this.focusNode,
     required this.streaming,
     required this.menuOpen,
+    required this.suggesting,
     required this.onKey,
     this.usage,
     super.key,
@@ -15,6 +48,7 @@ class PromptBar extends StatelessWidget {
   final FocusNode focusNode;
   final bool streaming;
   final bool menuOpen;
+  final bool suggesting;
   final KeyEventResult Function(FocusNode, KeyEvent) onKey;
   final Map<String, dynamic>? usage;
 
@@ -106,6 +140,8 @@ class PromptBar extends StatelessWidget {
                       ? 'working...'
                       : menuOpen
                       ? 'up/down to choose    enter to run    esc to dismiss'
+                      : suggesting
+                      ? 'tab or right arrow to accept'
                       : "Type '/help' for a list of commands.",
                   style: hintStyle,
                 ),
@@ -214,6 +250,61 @@ class CommandMenu extends StatelessWidget {
                         ),
                       ),
                     ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class PromptSuggestions extends StatelessWidget {
+  const PromptSuggestions({
+    required this.prompts,
+    required this.onPick,
+    super.key,
+  });
+
+  final List<String> prompts;
+  final ValueChanged<String> onPick;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          for (final prompt in prompts)
+            MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: () => onPick(prompt),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.3,
+                      ),
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    prompt,
+                    style: textTheme.bodySmall?.copyWith(
+                      fontSize: 12,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
               ),

@@ -1,0 +1,39 @@
+import 'dart:math';
+
+const suggestedPrompts = [
+  'What would he bring to an AWS migration?',
+  'How does the assistant on this site work?',
+  'What did he build at Savi?',
+  'Which of his projects use a vector database?',
+  'How does Gem run models across two different GPUs?',
+  'What is the most widely used thing he has shipped?',
+  'Has he run engineering for a company?',
+  'What does he use for infrastructure as code?',
+  'How did he get into software?',
+  'What has he built with Flutter?',
+  'What did he do before software?',
+  'How does he keep prompt caching working with retrieval?',
+  'Is he available for contract work?',
+  'What is the oldest project here?',
+  'How does he keep an API off the public internet?',
+  'What does he know about RAG?',
+  'Where is he based?',
+  'Show me a project with screenshots.',
+];
+
+List<String> randomPrompts(int count) {
+  final pool = List<String>.of(suggestedPrompts)..shuffle(Random());
+  return pool.take(count).toList();
+}
+
+String suggestionFor(String typed) {
+  if (typed.isEmpty || typed.startsWith('/')) return '';
+  final lower = typed.toLowerCase();
+  for (final prompt in suggestedPrompts) {
+    if (prompt.length > typed.length &&
+        prompt.toLowerCase().startsWith(lower)) {
+      return prompt.substring(typed.length);
+    }
+  }
+  return '';
+}

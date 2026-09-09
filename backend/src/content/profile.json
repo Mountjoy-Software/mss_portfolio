@@ -69,12 +69,14 @@
   "experience": [
     {
       "company": "Savi",
+      "url": "https://www.bysavi.com",
       "role": "Software Engineer, contract",
       "start": "2022-09",
       "end": "present",
       "highlights": [
         "Moved from full-time employee to 1099 contractor in August 2026; Savi is now the main client of Mountjoy Software Solutions.",
         "Migrated their entire stack off EC2 and onto ECS, containerising a legacy PHP application and modernising the stack around it.",
+        "Replaced the DocuSign integration in the core application flow with an in-house PDF generation, signature and faxing system.",
         "Built semantic search over the help centre articles behind the Savi Assistant, using embeddings and cosine similarity retrieval.",
         "Full-stack development across a PHP, Laravel, Python and React codebase.",
         "Owns the AWS infrastructure.",
@@ -129,6 +131,7 @@
     {
       "slug": "savi-assistant",
       "name": "Savi Assistant",
+      "year": 2025,
       "blurb": "Client-facing AI assistant for Savi. Retrieval over the help centre, streamed replies, and tool calling.",
       "details": "Built for Savi as their main client-facing assistant. Help centre content is chunked out of PDFs, embedded, and indexed in a vector database, so answers are retrieved by meaning rather than keyword match. Replies stream to the browser over Server-Sent Events, and the model can call tools to act rather than only answer. Built on the Laravel AI SDK against the Anthropic API. The retrieval approach is the same cosine-similarity technique behind Gem's memory system, pointed at a different corpus.",
       "stack": [
@@ -147,6 +150,7 @@
     {
       "slug": "gem",
       "name": "Gem",
+      "year": 2026,
       "blurb": "Fully self-hosted AI assistant. FastAPI backend on a dual-GPU box, one Flutter codebase across Android, iOS and web, and a three-layer memory system.",
       "details": "Two codebases and a machine at home. The server is FastAPI in Docker on a dual-GPU box: an AMD Radeon AI PRO R9700 for the 31B response model and an NVIDIA RTX 3060 for routing and embeddings, with a separate Ollama instance per GPU because one model cannot span mixed AMD and NVIDIA silicon.\n\nA small Qwen 3.5 4B gatekeeper triages every message and decides whether a tool is needed before the 31B responder ever sees it, so the expensive model never burns context deciding whether to search the web. Tools cover web search, weather, and reading and writing memory.\n\nMemory is three layers, each doing one job: markdown files as the source of truth, MySQL for folders, ownership and timestamps, and Qdrant for the embeddings. Before answering, it scores the incoming message against every note by cosine similarity and injects anything clearing the threshold, so recall happens without being asked. A nightly job consolidates near-duplicate notes and reorganises the store by semantic similarity.\n\nThe client is one Flutter codebase on Android, iOS and web, distributed to real devices through Firebase App Distribution. Kokoro-82M does text to speech locally, so no audio leaves the house. Every response writes a forensic trace of the fragments considered, tools called and prompt sent, which feeds a loop that diagnoses flagged responses on a schedule.",
       "stack": [
@@ -166,6 +170,7 @@
     {
       "slug": "pip",
       "name": "Pip",
+      "year": 2025,
       "blurb": "The predecessor to Gem. An OpenAI-backed assistant living on a Raspberry Pi with a 3 inch display, in a 3D-printed case mounted on the kitchen wall.",
       "details": "Pip was the first attempt at the idea Gem now does properly: a household assistant that is a physical object rather than an app. A Raspberry Pi behind a 3 inch display, in a case designed and printed for it, bolted to the kitchen wall with a camera and a shotgun microphone above it. Idle, it showed a pair of eyes with the temperature and time; spoken to, it answered through the OpenAI API.\n\nTwo repositories: a Python backend and a separate frontend for the display. Everything Gem got right about being local and owned came out of what Pip got wrong by depending on somebody else's API.",
       "stack": [
@@ -194,6 +199,7 @@
     {
       "slug": "dashmachine",
       "name": "DashMachine",
+      "year": 2020,
       "blurb": "Self-hosted application dashboard and bookmark manager. 1,265 GitHub stars and 11.3 million Docker Hub pulls.",
       "details": "An open source dashboard for self-hosters, written in Python and Flask. The reach is the interesting part: 11.3 million pulls of the official image on Docker Hub, 1,265 GitHub stars and 121 forks. That meant supporting a large user base across wildly varied deployments, reviewing outside contributions, and keeping the container small enough to be trivial to run.",
       "stack": [
@@ -226,6 +232,7 @@
     {
       "slug": "vectorcloud",
       "name": "VectorCloud",
+      "year": 2018,
       "blurb": "Web dashboard for the Anki Vector robot, officially adopted by Anki.",
       "details": "A self-hosted web interface and control surface for the Anki Vector robot, built on Vector's SDK. Anki officially adopted it, which is the part worth noting: an open source side project picked up by the hardware manufacturer whose product it extended. 124 GitHub stars and 19 forks.",
       "stack": [
@@ -239,6 +246,7 @@
     {
       "slug": "mss-portfolio",
       "name": "This site",
+      "year": 2026,
       "blurb": "Flutter web on S3 and CloudFront, FastAPI on ECS Fargate, all defined in CDK and shipped by GitHub Actions. The assistant you are talking to runs on Bedrock embeddings and a Qdrant collection of this record.",
       "details": "The diagram below is the whole thing. One CloudFront distribution fronts two origins: the default behaviour serves the Flutter bundle out of a private S3 bucket over Origin Access Control, and /api/* goes to an Application Load Balancer in front of a FastAPI task on ECS Fargate. Because both live behind the same distribution the browser is same-origin with the API, so there is no CORS anywhere. The load balancer's security group admits only CloudFront's origin-facing prefix list, which means api.mountjoy.io cannot be reached directly even though it has a public certificate.\n\nThe VPC has no NAT gateway. Tasks sit in public subnets with a public IP and reach S3 and DynamoDB over gateway endpoints, which costs nothing, rather than paying for a managed NAT to do the same work.\n\nAll of it is AWS CDK in Python, split into four stacks so the stateful pieces can carry termination protection and RETAIN policies while the compute and edge stacks stay disposable. GitHub Actions deploys on every push to main through OIDC federation, so there are no AWS keys stored anywhere in the repo or in GitHub. DynamoDB is a single table holding rate-limit counters keyed by a salted hash of the caller's IP, with a TTL so old rows expire themselves.\n\nThe assistant is Claude with a system prompt built from this same profile record. Portfolio content is embedded with Amazon Bedrock Titan and indexed in Qdrant, which both retrieves context for answers and drives the interactive graph you get from /projects. The system prompt is assembled once at import so the cached prefix stays byte-identical between requests and prompt caching actually hits; retrieved excerpts go into the user turn instead, where they cannot break the cache.\n\nSource is public.",
       "stack": [

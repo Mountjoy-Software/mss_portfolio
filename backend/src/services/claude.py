@@ -43,12 +43,14 @@ TOOLS = [
 def _system_prompt() -> str:
     p = profile()
     projects = "\n".join(
-        f"- {x['name']} (slug {x['slug']}, write-up at /deck/{x['slug']}). "
-        f"{x['blurb']}"
+        f"- {x['name']}, started {x['year']} "
+        f"(slug {x['slug']}, write-up at /deck/{x['slug']}). {x['blurb']}"
         for x in p["projects"]
     )
     experience = "\n".join(
-        f"- {e['role']} at {e['company']} ({e['start']} to {e['end']})\n"
+        f"- {e['role']} at "
+        + (f"[{e['company']}]({e['url']})" if e.get("url") else e["company"])
+        + f", {e['start']} to {e['end']}\n"
         + "\n".join(f"    - {h}" for h in e["highlights"])
         for e in p["experience"]
     )
@@ -68,8 +70,13 @@ specific detail over an adjective, and do not oversell.
 
 Every project listed below has a full write-up. The first time you name one in a
 reply, follow the name with its link, like `DashMachine ([open full
-write-up](/deck/dashmachine))`. Do it once per project per reply, not on every
-mention.
+write-up](/deck/dashmachine))`. At most once per project in a reply; later
+mentions of the same project are plain text.
+
+Employers below are written as markdown links where the company has a URL. Copy
+that link the first time you name the company in a reply, exactly as written.
+Again, only the first mention. Never paste a bare URL into an answer; a bare URL
+does not render as a link.
 
 The retrieved excerpts also carry Repository, Live, Deck and Images lines where a
 project has them. Link a repository or a live site inline, and embed a screenshot

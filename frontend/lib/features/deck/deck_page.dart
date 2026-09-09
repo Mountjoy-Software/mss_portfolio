@@ -76,13 +76,30 @@ class _Body extends StatelessWidget {
         children: [
           const _BackLink(),
           const SizedBox(height: 28),
-          Text(
-            project.name,
-            style: textTheme.titleLarge?.copyWith(
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              color: colorScheme.onSurface,
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                project.name,
+                style: textTheme.titleLarge?.copyWith(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              if (project.year != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: 10),
+                  child: Text(
+                    '${project.year}',
+                    style: textTheme.titleLarge?.copyWith(
+                      fontSize: 16,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 10),
           Text(

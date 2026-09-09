@@ -51,6 +51,7 @@ class Profile {
 class Experience {
   const Experience({
     required this.company,
+    required this.url,
     required this.role,
     required this.start,
     required this.end,
@@ -59,6 +60,7 @@ class Experience {
   });
 
   final String company;
+  final String? url;
   final String role;
   final String start;
   final String end;
@@ -67,6 +69,7 @@ class Experience {
 
   factory Experience.fromJson(Map<String, dynamic> json) => Experience(
     company: json['company'] as String,
+    url: json['url'] as String?,
     role: json['role'] as String,
     start: json['start'] as String? ?? '',
     end: json['end'] as String? ?? '',
@@ -95,6 +98,7 @@ class Project {
   const Project({
     required this.slug,
     required this.name,
+    required this.year,
     required this.blurb,
     required this.details,
     required this.stack,
@@ -105,6 +109,7 @@ class Project {
 
   final String slug;
   final String name;
+  final int? year;
   final String blurb;
   final String details;
   final List<String> stack;
@@ -115,6 +120,7 @@ class Project {
   factory Project.fromJson(Map<String, dynamic> json) => Project(
     slug: json['slug'] as String,
     name: json['name'] as String,
+    year: json['year'] as int?,
     blurb: json['blurb'] as String? ?? '',
     details: json['details'] as String? ?? '',
     stack: (json['stack'] as List<dynamic>? ?? [])

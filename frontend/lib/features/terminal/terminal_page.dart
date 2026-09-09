@@ -8,6 +8,7 @@ import '../../core/preferences.dart';
 import 'chat_controller.dart';
 import 'commands.dart';
 import 'prompt_bar.dart';
+import 'suggestions.dart';
 import 'transcript.dart';
 
 const _business = 'Mountjoy Software Solutions';
@@ -23,12 +24,13 @@ class TerminalPage extends ConsumerStatefulWidget {
 }
 
 class _TerminalPageState extends ConsumerState<TerminalPage> {
-  final _input = TextEditingController();
+  final _input = GhostController();
   final _focus = FocusNode();
   late final ScrollController _scroll;
 
-  int _selected = 0;
+  int _selected = -1;
   bool _dismissed = false;
+  List<String> _bubbles = const [];
   bool _suppressMenuReset = false;
   List<SlashCommand> _menu = const [];
   String _lastText = '';
@@ -40,6 +42,7 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
   void initState() {
     super.initState();
     _input.addListener(_onTextChanged);
+    _bubbles = randomPrompts(4);
     final state = ref.read(chatControllerProvider);
     _turnCount = state.turns.length;
     _tailLength = state.turns.isEmpty ? 0 : state.turns.last.content.length;
@@ -68,10 +71,11 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
   void _onTextChanged() {
     if (_input.text == _lastText) return;
     _lastText = _input.text;
-    if (_suppressMenuReset) return;
+    _input.ghost = suggestionFor(_input.text);
     setState(() {
+      if (_suppressMenuReset) return;
       _menu = matchingCommands(_input.text);
-      _selected = 0;
+      _selected = -1;
       _dismissed = false;
     });
   }
@@ -91,9 +95,19 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
   void _move(int delta) {
     final matches = _matches;
     if (matches.isEmpty) return;
-    final next = (_selected + delta + matches.length) % matches.length;
+    final next = _selected < 0
+        ? (delta > 0 ? 0 : matches.length - 1)
+        : (_selected + delta + matches.length) % matches.length;
     setState(() => _selected = next);
     _prefill(matches[next]);
+  }
+
+  void _accept(String ghost) {
+    final full = _input.text + ghost;
+    _input.value = TextEditingValue(
+      text: full,
+      selection: TextSelection.collapsed(offset: full.length),
+    );
   }
 
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
@@ -115,7 +129,18 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
         return KeyEventResult.handled;
       }
       if (key == LogicalKeyboardKey.tab) {
-        _prefill(matches[_selected.clamp(0, matches.length - 1)]);
+        _prefill(matches[_selected < 0 ? 0 : _selected]);
+        return KeyEventResult.handled;
+      }
+    }
+
+    if (_input.ghost.isNotEmpty) {
+      final selection = _input.selection;
+      final atEnd =
+          selection.isCollapsed && selection.baseOffset == _input.text.length;
+      if (key == LogicalKeyboardKey.tab ||
+          (key == LogicalKeyboardKey.arrowRight && atEnd)) {
+        _accept(_input.ghost);
         return KeyEventResult.handled;
       }
     }
@@ -140,6 +165,7 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
       final token = commandToken(trimmed);
       if (token == '/clear') {
         controller.reset();
+        setState(() => _bubbles = randomPrompts(4));
         return;
       }
       const graphs = {
@@ -259,7 +285,7 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
                                 description: c.description,
                               ),
                           ],
-                          selected: _selected.clamp(0, matches.length - 1),
+                          selected: _selected,
                           onHover: (i) => setState(() => _selected = i),
                           onPick: (i) => _prefill(matches[i]),
                         ),
@@ -271,13 +297,23 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
             _Column(
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: PromptBar(
-                  controller: _input,
-                  focusNode: _focus,
-                  streaming: state.streaming,
-                  menuOpen: matches.isNotEmpty,
-                  onKey: _onKey,
-                  usage: state.usage,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (state.turns.isEmpty &&
+                        matches.isEmpty &&
+                        _input.text.isEmpty)
+                      PromptSuggestions(prompts: _bubbles, onPick: _send),
+                    PromptBar(
+                      controller: _input,
+                      focusNode: _focus,
+                      streaming: state.streaming,
+                      menuOpen: matches.isNotEmpty,
+                      suggesting: _input.ghost.isNotEmpty,
+                      onKey: _onKey,
+                      usage: state.usage,
+                    ),
+                  ],
                 ),
               ),
             ),
