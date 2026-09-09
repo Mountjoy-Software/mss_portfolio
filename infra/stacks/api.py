@@ -24,6 +24,7 @@ class ApiStack(Stack):
         table: dynamodb.ITableV2,
         repository: ecr.IRepository,
         anthropic_secret: secretsmanager.ISecret,
+        admin_secret: secretsmanager.ISecret,
         domain: str,
         api_domain: str,
         zone_id: str,
@@ -87,6 +88,15 @@ class ApiStack(Stack):
             secrets={
                 "ANTHROPIC_API_KEY": ecs.Secret.from_secrets_manager(anthropic_secret),
                 "IP_HASH_SALT": ecs.Secret.from_secrets_manager(ip_hash_salt),
+                "ADMIN_USERNAME": ecs.Secret.from_secrets_manager(
+                    admin_secret, "username"
+                ),
+                "ADMIN_PASSWORD_HASH": ecs.Secret.from_secrets_manager(
+                    admin_secret, "password_hash"
+                ),
+                "ADMIN_SESSION_SECRET": ecs.Secret.from_secrets_manager(
+                    admin_secret, "session_secret"
+                ),
             },
             logging=ecs.LogDrivers.aws_logs(
                 stream_prefix="api",

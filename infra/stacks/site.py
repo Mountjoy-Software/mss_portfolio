@@ -12,6 +12,13 @@ from aws_cdk import (
 )
 from constructs import Construct
 
+VIEWER_IP = """function handler(event) {
+  var request = event.request;
+  request.headers['x-viewer-ip'] = { value: event.viewer.ip };
+  return request;
+}
+"""
+
 SPA_ROUTER = """function handler(event) {
   var request = event.request;
   var uri = request.uri;
@@ -114,6 +121,13 @@ class SiteStack(Stack):
             keepalive_timeout=Duration.seconds(60),
             origin_id="ApiOrigin",
         )
+        viewer_ip = cloudfront.Function(
+            self,
+            "ViewerIp",
+            code=cloudfront.FunctionCode.from_inline(VIEWER_IP),
+            runtime=cloudfront.FunctionRuntime.JS_2_0,
+        )
+
         api_behavior = cloudfront.BehaviorOptions(
             origin=api_origin,
             viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
@@ -122,6 +136,12 @@ class SiteStack(Stack):
             origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
             response_headers_policy=security_headers,
             compress=False,
+            function_associations=[
+                cloudfront.FunctionAssociation(
+                    function=viewer_ip,
+                    event_type=cloudfront.FunctionEventType.VIEWER_REQUEST,
+                )
+            ],
         )
 
         self.distribution = cloudfront.Distribution(

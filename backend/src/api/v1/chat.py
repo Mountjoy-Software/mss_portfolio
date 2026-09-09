@@ -4,7 +4,7 @@ from fastapi.responses import StreamingResponse
 from src.config import settings
 from src.schemas.chat import ChatRequest
 from src.security import request_ip
-from src.services import claude, dynamo, vectors
+from src.services import claude, dynamo, threads, vectors
 
 router = APIRouter()
 
@@ -33,8 +33,17 @@ async def chat(body: ChatRequest, request: Request) -> StreamingResponse:
     retrieved = await vectors.context(
         history[-1]["content"], settings.RAG_CONTEXT_LIMIT
     )
+    stream = claude.stream_reply(history, retrieved)
+    if body.thread_id:
+        stream = threads.recording(
+            stream,
+            body.thread_id,
+            ip,
+            request.headers.get("user-agent", ""),
+            history,
+        )
     return StreamingResponse(
-        claude.stream_reply(history, retrieved),
+        stream,
         media_type="text/event-stream",
         headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
     )

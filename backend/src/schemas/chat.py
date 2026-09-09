@@ -10,3 +10,4 @@ class Turn(BaseModel):
 
 class ChatRequest(BaseModel):
     messages: list[Turn] = Field(min_length=1, max_length=20)
+    thread_id: str | None = Field(default=None, max_length=64)

@@ -234,3 +234,61 @@ class GraphNode {
     );
   }
 }
+
+class AdminSession {
+  const AdminSession({required this.token});
+
+  final String token;
+}
+
+class AdminThread {
+  const AdminThread({
+    required this.id,
+    required this.ip,
+    required this.agent,
+    required this.turns,
+    required this.updated,
+    required this.messages,
+  });
+
+  final String id;
+  final String ip;
+  final String agent;
+  final int turns;
+  final DateTime updated;
+  final List<ChatTurn> messages;
+
+  factory AdminThread.fromJson(Map<String, dynamic> json) => AdminThread(
+    id: json['id'] as String? ?? '',
+    ip: json['ip'] as String? ?? 'unknown',
+    agent: json['agent'] as String? ?? '',
+    turns: (json['turns'] as num?)?.toInt() ?? 0,
+    updated: DateTime.fromMillisecondsSinceEpoch(
+      ((json['updated'] as num?)?.toInt() ?? 0) * 1000,
+    ),
+    messages: (json['messages'] as List<dynamic>? ?? [])
+        .map(
+          (e) => ChatTurn(
+            role: (e as Map<String, dynamic>)['role'] as String? ?? '',
+            content: e['content'] as String? ?? '',
+          ),
+        )
+        .toList(),
+  );
+}
+
+class AdminView {
+  const AdminView({required this.threads, required this.blocked});
+
+  final List<AdminThread> threads;
+  final Set<String> blocked;
+
+  factory AdminView.fromJson(Map<String, dynamic> json) => AdminView(
+    threads: (json['threads'] as List<dynamic>? ?? [])
+        .map((e) => AdminThread.fromJson(e as Map<String, dynamic>))
+        .toList(),
+    blocked: (json['blocked'] as List<dynamic>? ?? [])
+        .map((e) => e as String)
+        .toSet(),
+  );
+}

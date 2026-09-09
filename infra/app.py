@@ -23,6 +23,7 @@ api = ApiStack(
     table=data.table,
     repository=data.repository,
     anthropic_secret=data.anthropic_secret,
+    admin_secret=data.admin_secret,
     domain=domain,
     api_domain=api_domain,
     zone_id=zone_id,

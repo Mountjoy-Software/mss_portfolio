@@ -59,6 +59,9 @@ services:
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:?run scripts/dev.sh}
       AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
       IP_HASH_SALT: local-dev-salt
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-}
+      ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH:-}
+      ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?set it in .env, see scripts/dev.sh}
       CORS_ORIGINS: '["http://localhost:8080","http://localhost:3000"]'
     volumes:

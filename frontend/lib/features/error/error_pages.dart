@@ -35,16 +35,32 @@ class FatalErrorPage extends StatelessWidget {
   }
 }
 
+class BannedPage extends StatelessWidget {
+  const BannedPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const _Frame(
+      command: 'connection refused',
+      headline: 'Ross banned you. Sorry',
+      detail: '',
+      showHome: false,
+    );
+  }
+}
+
 class _Frame extends StatelessWidget {
   const _Frame({
     required this.command,
     required this.headline,
     required this.detail,
+    this.showHome = true,
   });
 
   final String command;
   final String headline;
   final String detail;
+  final bool showHome;
 
   @override
   Widget build(BuildContext context) {
@@ -97,43 +113,47 @@ class _Frame extends StatelessWidget {
                       color: colorScheme.error,
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    detail,
-                    style: textTheme.bodyMedium?.copyWith(
-                      fontSize: 14,
-                      height: 1.65,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 26),
-                  MouseRegion(
-                    cursor: SystemMouseCursors.click,
-                    child: GestureDetector(
-                      onTap: () => context.go('/'),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            '< ',
-                            style: TextStyle(
-                              color: colorScheme.primary,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          Text(
-                            'back to the terminal',
-                            style: textTheme.bodyMedium?.copyWith(
-                              fontSize: 13,
-                              color: colorScheme.primary,
-                              decoration: TextDecoration.underline,
-                              decorationColor: colorScheme.primary,
-                            ),
-                          ),
-                        ],
+                  if (detail.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      detail,
+                      style: textTheme.bodyMedium?.copyWith(
+                        fontSize: 14,
+                        height: 1.65,
+                        color: colorScheme.onSurfaceVariant,
                       ),
                     ),
-                  ),
+                  ],
+                  if (showHome) ...[
+                    const SizedBox(height: 26),
+                    MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: () => context.go('/'),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '< ',
+                              style: TextStyle(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            Text(
+                              'back to the terminal',
+                              style: textTheme.bodyMedium?.copyWith(
+                                fontSize: 13,
+                                color: colorScheme.primary,
+                                decoration: TextDecoration.underline,
+                                decorationColor: colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

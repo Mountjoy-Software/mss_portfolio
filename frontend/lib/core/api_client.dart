@@ -19,6 +19,73 @@ class ApiClient {
 
   Uri _uri(String path) => Uri.parse('$baseUrl/api/v1$path');
 
+  Future<bool> visitorBlocked() async {
+    try {
+      final response = await _client.get(_uri('/visitor'));
+      if (response.statusCode != 200) return false;
+      final decoded =
+          jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+      return decoded['blocked'] == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<AdminSession> adminLogin(String username, String password) async {
+    final response = await _client.post(
+      _uri('/admin/login'),
+      headers: {'content-type': 'application/json'},
+      body: jsonEncode({'username': username, 'password': password}),
+    );
+    if (response.statusCode != 200) {
+      throw ApiException(
+        _detailOr(response, 'Could not sign in.'),
+        response.statusCode,
+      );
+    }
+    final decoded =
+        jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+    return AdminSession(token: decoded['token'] as String);
+  }
+
+  Future<AdminView> adminThreads(String token) async {
+    final response = await _client.get(
+      _uri('/admin/threads'),
+      headers: {'authorization': 'Bearer $token'},
+    );
+    if (response.statusCode != 200) {
+      throw ApiException(
+        _detailOr(response, 'Could not load threads.'),
+        response.statusCode,
+      );
+    }
+    return AdminView.fromJson(
+      jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>,
+    );
+  }
+
+  Future<List<String>> setBlocked(String token, String ip, bool blocked) async {
+    final response = await _client.post(
+      _uri(blocked ? '/admin/block' : '/admin/unblock'),
+      headers: {
+        'content-type': 'application/json',
+        'authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'ip': ip}),
+    );
+    if (response.statusCode != 200) {
+      throw ApiException(
+        _detailOr(response, 'Could not change the block list.'),
+        response.statusCode,
+      );
+    }
+    final decoded =
+        jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+    return (decoded['blocked'] as List<dynamic>)
+        .map((e) => e as String)
+        .toList();
+  }
+
   Future<Profile> fetchProfile() async {
     final response = await _client.get(_uri('/profile'));
     if (response.statusCode != 200) {
@@ -66,11 +133,12 @@ class ApiClient {
         .toList();
   }
 
-  Stream<ChatEvent> streamChat(List<ChatTurn> history) async* {
+  Stream<ChatEvent> streamChat(List<ChatTurn> history, String threadId) async* {
     final request = http.Request('POST', _uri('/chat'))
       ..headers['content-type'] = 'application/json'
       ..body = jsonEncode({
         'messages': history.map((t) => t.toJson()).toList(),
+        'thread_id': threadId,
       });
 
     final response = await _client.send(request);

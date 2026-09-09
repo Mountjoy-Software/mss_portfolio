@@ -4,6 +4,7 @@ from fastapi import Request
 
 from src.config import settings
 from src.services.dynamo import within_rate_limit
+from src.services.threads import BANNED, is_blocked
 
 BLOCKED_SUFFIXES = (
     ".php",
@@ -39,13 +40,20 @@ BLOCKED_SEGMENTS = (
 
 
 def client_ip(headers: dict[bytes, bytes] | None, fallback: str) -> str:
-    forwarded = (headers or {}).get(b"x-forwarded-for")
+    found = headers or {}
+    stamped = found.get(b"x-viewer-ip")
+    if stamped:
+        return stamped.decode(errors="replace").strip()
+    forwarded = found.get(b"x-forwarded-for")
     if forwarded:
         return forwarded.decode(errors="replace").split(",")[0].strip()
     return fallback
 
 
 def request_ip(request: Request) -> str:
+    stamped = request.headers.get("x-viewer-ip")
+    if stamped:
+        return stamped.strip()
     forwarded = request.headers.get("x-forwarded-for")
     if forwarded:
         return forwarded.split(",")[0].strip()
@@ -63,6 +71,10 @@ class Guard:
     def __init__(self, app):
         self.app = app
         self._health = f"{settings.API_V1_STR}/health"
+        self._unbannable = (
+            f"{settings.API_V1_STR}/admin",
+            f"{settings.API_V1_STR}/visitor",
+        )
 
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
@@ -92,6 +104,9 @@ class Guard:
             return await _reject(
                 send, 429, "That is a lot of requests. Give it a minute."
             )
+
+        if not path.startswith(self._unbannable) and await is_blocked(ip):
+            return await _reject(send, 403, BANNED)
 
         await self.app(scope, receive, send)
 

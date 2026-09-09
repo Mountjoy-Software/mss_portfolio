@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_client.dart';
@@ -38,7 +40,18 @@ class ChatState {
   }
 }
 
+String _newThreadId() {
+  final random = Random.secure();
+  final tail = List<int>.generate(
+    8,
+    (_) => random.nextInt(256),
+  ).map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+  return '${DateTime.now().millisecondsSinceEpoch.toRadixString(16)}$tail';
+}
+
 class ChatController extends Notifier<ChatState> {
+  String _threadId = _newThreadId();
+
   @override
   ChatState build() => const ChatState();
 
@@ -118,7 +131,7 @@ class ChatController extends Notifier<ChatState> {
 
     try {
       await for (final event
-          in ref.read(apiClientProvider).streamChat(history)) {
+          in ref.read(apiClientProvider).streamChat(history, _threadId)) {
         switch (event.kind) {
           case ChatEventKind.token:
             pending.content += event.text;
@@ -146,6 +159,7 @@ class ChatController extends Notifier<ChatState> {
 
   void reset() {
     state = const ChatState();
+    _threadId = _newThreadId();
     ref.read(transcriptOffsetProvider.notifier).save(0);
   }
 }

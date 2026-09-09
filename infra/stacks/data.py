@@ -51,6 +51,18 @@ class DataStack(Stack):
             removal_policy=RemovalPolicy.RETAIN,
         )
 
+        self.admin_secret = secretsmanager.Secret(
+            self,
+            "AdminCredentials",
+            secret_name="mss-portfolio/admin-credentials",
+            description=(
+                "Admin console username, scrypt password hash and session "
+                "signing secret"
+            ),
+            removal_policy=RemovalPolicy.RETAIN,
+        )
+
         CfnOutput(self, "TableName", value=self.table.table_name)
         CfnOutput(self, "RepositoryUri", value=self.repository.repository_uri)
         CfnOutput(self, "AnthropicSecretArn", value=self.anthropic_secret.secret_arn)
+        CfnOutput(self, "AdminSecretArn", value=self.admin_secret.secret_arn)

@@ -36,6 +36,15 @@ class Settings(BaseSettings):
     MAX_BODY_BYTES: int = 65536
     IP_HASH_SALT: str = "local-dev-salt"
 
+    ADMIN_USERNAME: str = ""
+    ADMIN_PASSWORD_HASH: str = ""
+    ADMIN_SESSION_SECRET: str = ""
+    ADMIN_SESSION_HOURS: int = 12
+    ADMIN_LOGIN_LIMIT: int = 5
+    ADMIN_LOGIN_WINDOW_SECONDS: int = 300
+    THREAD_TTL_DAYS: int = 30
+    THREAD_LIST_LIMIT: int = 200
+
     CORS_ORIGINS: list[str] = []
     MCP_ORIGINS: list[str] = ["https://mountjoy.io", "https://www.mountjoy.io"]
     CONTACT_EMAIL: str = "ross.mountjoy.carr@pm.me"
