@@ -7,11 +7,9 @@ from src.services import claude, dynamo, vectors
 
 router = APIRouter()
 
-TOO_FAST = (
-    "You are asking faster than I can answer. Give it a minute and try again."
-)
+TOO_FAST = "Too many questions for right now. Try again in a minute."
 TOO_MUCH = (
-    "That is a lot of questions for one visit. Try again a bit later, or email "
+    "That is a lot of questions for one visit. Try again later, or email "
     "ross.mountjoy.carr@pm.me and reach the real thing."
 )
 

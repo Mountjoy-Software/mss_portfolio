@@ -171,6 +171,14 @@ async def expand(point_id: str, limit: int) -> list[dict]:
 
 
 async def context(question: str, limit: int) -> list[dict]:
+    try:
+        return await _context(question, limit)
+    except Exception:
+        log.exception("retrieval failed, answering without it")
+        return []
+
+
+async def _context(question: str, limit: int) -> list[dict]:
     if not _ready:
         return []
     vector = await embeddings.embed(question)

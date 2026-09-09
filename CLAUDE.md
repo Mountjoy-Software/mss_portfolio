@@ -81,6 +81,12 @@ because IAM refuses a GitHub OIDC trust policy that does not constrain `sub` or
 boto3 cannot read `aws login` credentials without `botocore[crt]` and fails at request
 time, not import. It lives in `requirements-dev.txt` only; Fargate uses the task role.
 
+`scripts/dev.sh` exports short-lived AWS credentials into the api container for Bedrock,
+and they expire. A long-running compose session eventually fails embedding calls with
+`ExpiredTokenException`; `./scripts/dev.sh up -d --force-recreate api` refreshes them.
+Retrieval and the index build both degrade rather than fail when that happens, so the
+symptom is a graph 503 and answers without retrieved context, not an outage.
+
 ## Anthropic API
 
 Model is `claude-sonnet-5`, set in `backend/src/config.py`. The system prompt is built
