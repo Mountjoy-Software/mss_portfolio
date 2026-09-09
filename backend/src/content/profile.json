@@ -269,12 +269,16 @@
       "slug": "gem",
       "name": "Gem",
       "year": 2026,
-      "blurb": "Fully self-hosted AI assistant. FastAPI backend on a dual-GPU box, one Flutter codebase across Android, iOS and web, and a three-layer memory system.",
-      "details": "Two codebases and a machine at home. The server is FastAPI in Docker on a dual-GPU box: an AMD Radeon AI PRO R9700 for the 31B response model and an NVIDIA RTX 3060 for routing and embeddings, with a separate Ollama instance per GPU because one model cannot span mixed AMD and NVIDIA silicon.\n\nA small Qwen 3.5 4B gatekeeper triages every message and decides whether a tool is needed before the 31B responder ever sees it, so the expensive model never burns context deciding whether to search the web. Tools cover web search, weather, and reading and writing memory.\n\nMemory is three layers, each doing one job: markdown files as the source of truth, MySQL for folders, ownership and timestamps, and Qdrant for the embeddings. Before answering, it scores the incoming message against every note by cosine similarity and injects anything clearing the threshold, so recall happens without being asked. A nightly job consolidates near-duplicate notes and reorganises the store by semantic similarity.\n\nThe client is one Flutter codebase on Android, iOS and web, distributed to real devices through Firebase App Distribution. Kokoro-82M does text to speech locally, so no audio leaves the house. Every response writes a forensic trace of the fragments considered, tools called and prompt sent, which feeds a loop that diagnoses flagged responses on a schedule.",
+      "blurb": "Fully self-hosted household AI assistant. Three repos, a dual-GPU box in the house, one Flutter codebase across Android, iOS, iPad and web, and a memory system that metabolises conversations while nobody is looking.",
+      "details": "Gem is the assistant my household actually uses. Nothing about her is a demo: she runs on a machine in my house, answers on a phone, a browser and an iPad mounted in the kitchen, and the people talking to her are my family. Three repositories — a FastAPI server, a Flutter client, and an infrastructure and operations repo for the box she runs on.\n\n**The hardware and why there are two of everything.** She runs on a dual-GPU Ubuntu box: an AMD Radeon AI PRO R9700 with 32GB for the large conversation model, and an NVIDIA RTX 3060 with 12GB for embeddings, speech and the small utility model. A single Ollama process cannot split one model across mixed AMD and NVIDIA silicon, so each card runs its own Ollama instance in Docker and a model string can name the instance that should serve it. ROCm runs in a container rather than on the host because the box is on a newer Ubuntu than ROCm's support matrix covers; the container brings its own userspace and only needs the kernel driver.\n\n**Routing, and deleting the classifier.** A small model used to sit in front of every message deciding whether a tool was needed and how hard to think. It was a telephone game: the small model's limits had to be compensated for with an ever more rigid keyword-driven prompt, and tools fired on sentences that merely mentioned a trigger word — \"we've been adding things to the shopping list\" would fire a memory write. I deleted it. The 31B conversation model now makes that call itself, natively, in the same pass it uses to answer: tools are attached for exactly one round against its real prompt, and if it calls one the tool runs and the model streams a second time with no tools attached. That guarantees a tool can fire at most once per message, which matters because a second tools-attached round produced real duplicate side effects — two identical reminders for one request, because a model does not reliably recognise its own completed action as done rather than repeatable.\n\n**Memory is a background process, not something that happens mid-sentence.** Nothing writes to memory during a conversation. Ten minutes after the last WebSocket in the house closes, a loop inside the API process distils what is new in each conversation into atomic notes, and on a longer cadence audits the whole store: kill duplicates, apply a \"so what?\" test, split summary-shaped notes, and resolve contradictions by betting on the recent version rather than keeping both. It freezes the instant anyone reconnects, cancelling the in-flight model call so the GPU is free before the person's message arrives, and every tool execution is shielded so a freeze lands between turns and cannot tear a note's three stores apart mid-write.\n\nThis replaced a 3am cron job, and the reason was a real failure. Every live memory write went through a merge prompt instructed to preserve every existing detail and never remove anything — which is precisely why notes could only grow. A correction landed as an addition, so the store accumulated contradictions instead of settling. The loop replaces content instead of appending to it.\n\n**Retrieval is two-stage, and the second stage is the interesting one.** Notes live in three places kept in sync by one module: a flat markdown vault, MySQL rows for ownership and tags, and a Qdrant point for the embedding. Rather than folders, a note is owned by one or more people and carries tags — ownership is the entire access check, so a note you do not own is indistinguishable from one that does not exist. On a query, the question is embedded once, and that same vector is matched against a separate Qdrant collection of tag-name embeddings; tags that clear a threshold become a hard payload filter before cosine similarity runs inside the narrowed subset. Tag selection therefore costs no extra model round-trip — it is one more cosine lookup against a tiny collection.\n\nThe tag threshold sits deliberately far above the note threshold, because the two failures are not symmetric: a weak note match costs some noise in the prompt, but a weak tag match filters genuinely relevant notes out of the search entirely. So narrowing is only ever allowed to reduce noise — if the tag stage matches nothing confidently the search is ownership-only, and if a narrowed search comes back empty it is retried without the tags. Only topic tags are embedded; the structural ones a person never says out loud would add vocabulary that can only mis-match.\n\n**Every answer leaves a forensic trace.** One JSON blob per message records the retrieval query with every Qdrant hit and score including the near-misses that did not clear the threshold, the whole tag pre-filter and whether the fallback fired, each tool's raw arguments and result, and the exact final message list sent to the model. Debugging \"why did she answer that\" is a query, not a guess — and a note that never reached the similarity search at all would otherwise be invisible.\n\n**Who is talking.** The kitchen iPad is shared, so \"what's on my list\" has to know whose list. A CPU-only service wraps SpeechBrain's ECAPA-TDNN speaker embeddings; a person reads four phrases once and from then on each sentence is matched against their centroid by cosine, needing to clear both an absolute threshold and a margin ahead of the runner-up. Only the embedding is stored, never the audio. On a confident match the transcribe endpoint returns a 30-minute token for that person, so the prompt, the retrieval and every tool are already scoped correctly without the chat endpoint knowing anything about voices. An unsure match is a real guest account with nothing in it, because before that the fallback was the iPad's own login — and a stranger asking for \"my list\" got mine.\n\n**Wake word.** \"Hey Gem\" is detected on-device by an ONNX classifier I trained on the box from recordings of the household, running over a rolling two-second audio ring ten times a second. It replaced Apple's on-device speech recogniser plus a regex of near-misses, which peaked around six wakes in ten and was markedly worse for my wife than for me: a dictation engine has no idea \"Gem\" is a word, returns text rather than confidence, and closes its request on the very silence that precedes someone saying it.\n\n**Speech, and the name problem.** Whisper handles transcription at int8, which halved its VRAM against float16 with no measurable accuracy loss once a cleanup pass runs. That pass is not optional: Whisper hears \"Jem\" for \"Gem\" every single time. A utility model strips fillers and fixes mis-hearings, and because the model does not always act on the name, a deterministic pass runs after it — her name following a greeting becomes Gem, while \"my friend Jim\" is left alone. Kokoro does text to speech locally, so no audio leaves the house.\n\n**What she can actually do.** Web search, weather, timers, reminders and recurring tasks, shared lists, notes, a news feed whose search queries she picks herself from what she knows about each person, read-only calendar sync from subscribed ICS feeds, Plaid transaction sync, and Spotify — the box is the house's speaker over Bluetooth, with a level meter feeding the console's visualiser over UDP. The client surfaces most of these as docked mini apps inside the chat rather than separate screens, plus Android home-screen widgets drawn as bitmaps through a dot-matrix font because RemoteViews cannot host Flutter.\n\n**The console.** The iPad on the kitchen counter is the same Flutter codebase in a different mode: an ambient face with weather, the day's agenda and a voice visualiser. It sleeps after a minute of quiet and wakes on the wake word, a touch, or motion — motion from the front camera reduced to a 24×18 brightness grid at 4fps, with no frame kept, and the camera armed only while she is asleep so it is never on while someone is talking to her. It connects as a passive socket: it gets every event but is left out of the presence count, because an iPad switched on all day with nobody at it otherwise froze the memory loop indefinitely. The loop shows its work on the glass — a distinct face for housekeeping, so nobody mistakes it for an answer on its way.\n\n**Where it is now.** In daily use by my household. The client ships to real devices through Firebase App Distribution. Memory, retrieval, voice identity, the wake word, the mini apps and the music hub are all live; proactive communication is the next thing, and the hooks for it — the notable items each cycle collects, per-note provenance back to the conversation that produced it — are already in place. The honest gap is that retrieval is dense vectors plus a payload filter, not hybrid search in the strict sense: there is no lexical ranking anywhere, which is why keyword search over memories is a substring scan. Adding a sparse BM25 vector and fusing with reciprocal rank fusion is the documented fix, and it needs a collection rebuild because named vectors can only be configured at creation.",
       "stack": [
+        "Python",
         "FastAPI",
         "Flutter",
         "Riverpod",
+        "Dart",
+        "Swift",
+        "Kotlin",
         "Ollama",
         "Qdrant",
         "MySQL",
@@ -283,9 +287,50 @@
         "Docker",
         "Docker Compose",
         "Anthropic Claude API",
-        "Kokoro-82M"
+        "OpenAI API",
+        "RAG",
+        "embeddings",
+        "vector search",
+        "tool use",
+        "streaming",
+        "Whisper",
+        "Kokoro TTS",
+        "SpeechBrain ECAPA-TDNN",
+        "ONNX",
+        "Linux",
+        "NGINX"
       ],
-      "public": false
+      "public": false,
+      "media": [
+        {
+          "src": "/media/gem/console.gif",
+          "caption": "The kitchen console. Ambient weather, the day's agenda and a voice visualiser; it sleeps after a minute and wakes on \"hey Gem\", a touch, or motion."
+        },
+        {
+          "src": "/media/gem/memories.gif",
+          "caption": "Memories: the notes the idle loop wrote from conversations, tagged and vector-indexed. A person can edit one but never creates one."
+        },
+        {
+          "src": "/media/gem/notes.gif",
+          "caption": "Notes are the other half of the same tables: a person's own scratchpad, never embedded and invisible to the audit, so Gem cannot silently rewrite one."
+        },
+        {
+          "src": "/media/gem/web-search.gif",
+          "caption": "Web search. The conversation model decides for itself that a question is time-sensitive enough to need it, then answers from what came back."
+        },
+        {
+          "src": "/media/gem/weather.gif",
+          "caption": "Weather, from a free geocoding and forecast API. The location argument is optional and falls back to a household setting when the model leaves it out."
+        },
+        {
+          "src": "/media/gem/lists.gif",
+          "caption": "Shared lists, docked as a mini app inside the chat rather than a separate screen."
+        },
+        {
+          "src": "/media/gem/calendar.gif",
+          "caption": "Calendar. Events sync read-only from subscribed ICS feeds, so they are editable at the source and nowhere else."
+        }
+      ]
     },
     {
       "slug": "pip",

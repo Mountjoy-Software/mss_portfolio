@@ -77,6 +77,19 @@ def _skill_docs(profile: dict) -> list[Doc]:
     return docs
 
 
+def _shorten(text: str | None, limit: int) -> str | None:
+    if not text or len(text) <= limit:
+        return text
+    kept: list[str] = []
+    spent = 0
+    for paragraph in text.split("\n\n"):
+        if kept and spent + len(paragraph) > limit:
+            break
+        kept.append(paragraph)
+        spent += len(paragraph) + 2
+    return "\n\n".join(kept)
+
+
 def _and(names: list[str]) -> str:
     unique = list(dict.fromkeys(names))
     if len(unique) == 1:
@@ -100,7 +113,7 @@ def _project_docs(profile: dict) -> list[Doc]:
                         if project.get("year")
                         else project["name"],
                         project.get("blurb"),
-                        project.get("details"),
+                        _shorten(project.get("details"), 900),
                         f"Built with {stack}." if stack else None,
                     )
                     if part
