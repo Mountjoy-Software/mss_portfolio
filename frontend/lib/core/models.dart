@@ -6,6 +6,8 @@ class Profile {
     required this.summary,
     required this.email,
     required this.location,
+    this.relocation,
+    this.direction,
     required this.skills,
     required this.experience,
     required this.projects,
@@ -18,6 +20,8 @@ class Profile {
   final String summary;
   final String email;
   final String location;
+  final String? relocation;
+  final String? direction;
   final Map<String, List<String>> skills;
   final List<Experience> experience;
   final List<Project> projects;
@@ -30,6 +34,8 @@ class Profile {
     summary: json['summary'] as String? ?? '',
     email: json['email'] as String? ?? '',
     location: json['location'] as String? ?? '',
+    relocation: json['relocation'] as String?,
+    direction: json['direction'] as String?,
     skills: (json['skills'] as Map<String, dynamic>? ?? {}).map(
       (key, value) => MapEntry(
         key,

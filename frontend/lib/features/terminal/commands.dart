@@ -160,7 +160,7 @@ String contactReply(Profile profile) {
 
 **${profile.name}** — ${profile.business}
 
-${profile.location}
+${profile.location}${profile.relocation == null ? '' : '\n\n${profile.relocation}'}
 
 Email: <${profile.email}>
 

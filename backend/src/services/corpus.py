@@ -191,6 +191,7 @@ def _about_docs(profile: dict) -> list[Doc]:
         f"{profile['name']} is based in {profile.get('location', '')}." if profile.get("location") else None,
         f"He is a {about['citizenship']}." if about.get("citizenship") else None,
         f"He was born in {about['birthplace']}." if about.get("birthplace") else None,
+        profile.get("relocation"),
     ]
     biography = " ".join(f for f in facts if f)
     if biography or profile.get("summary"):
@@ -199,9 +200,18 @@ def _about_docs(profile: dict) -> list[Doc]:
                 key="about:bio",
                 kind="bio",
                 title=f"About {profile['name']}",
-                text=f"{biography}\n\n{profile.get('summary', '')}".strip(),
+                text="\n\n".join(
+                    part
+                    for part in (
+                        biography,
+                        profile.get("summary", ""),
+                        profile.get("direction", ""),
+                    )
+                    if part
+                ),
                 payload={
                     "location": profile.get("location"),
+                    "relocation": profile.get("relocation"),
                     "citizenship": about.get("citizenship"),
                     "birthplace": about.get("birthplace"),
                     "media": [profile["photo"]] if profile.get("photo") else [],

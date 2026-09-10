@@ -20,6 +20,10 @@ const suggestedPrompts = [
   'Where is he based?',
   'Show me a project with screenshots.',
   'Can I get his resume for a backend role?',
+  'Why robotics?',
+  'What does he want to build next?',
+  'Could he work with a team in Europe?',
+  'How did a robot get him into coding?',
 ];
 
 List<String> randomPrompts(int count) {

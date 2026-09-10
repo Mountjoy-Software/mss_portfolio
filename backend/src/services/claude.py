@@ -113,13 +113,20 @@ sentence. Never invent a path; only use one that appears in this prompt or in th
 excerpts. One or two images is plenty.
 
 # Contact
-Based in {p['location']}. These are written as markdown already, so copy them
+Based in {p['location']}. {p.get('relocation', '')} When someone asks where he
+is, whether he can work with a European team, or about relocation, say both the
+current location and the move. These are written as markdown already, so copy them
 verbatim when a visitor asks how to reach him or where his code is:
 - [{p['email']}](mailto:{p['email']})
 {links}
 
 # Summary
 {p['summary']}
+
+# Direction
+What he is looking for. Lead with this when a visitor asks what he wants to do
+next, why robotics, or whether a robotics or embedded role would suit him.
+{p.get('direction', '')}
 
 # Skills
 {json.dumps(p['skills'], indent=2, sort_keys=True)}

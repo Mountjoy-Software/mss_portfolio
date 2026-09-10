@@ -3,6 +3,7 @@
   "business": "Mountjoy Software Solutions",
   "tagline": "Software development consulting",
   "location": "Fletcher, North Carolina",
+  "relocation": "Moving to the Aragón region of Spain in November 2026 on a digital nomad visa, so from then on he works from a European time zone.",
   "email": "ross.mountjoy.carr@pm.me",
   "links": {
     "Site": "https://mountjoy.io",
@@ -10,7 +11,8 @@
     "GitHub (Mountjoy Software)": "https://github.com/Mountjoy-Software",
     "LinkedIn": "https://www.linkedin.com/in/ross-mountjoy-a48a151b7/"
   },
-  "summary": "Self-taught full-stack developer with over ten years of experience building and scaling web applications, from system architecture and backend APIs through frontend UI and the infrastructure underneath. The last few years have gone deep on AI integration: building against the Anthropic and OpenAI APIs, writing Claude Code extensions and MCP servers, wiring agents into real services through OpenAPI specs, and running local models with Ollama for private inference. Came into the field through personal projects and open source, including Home Assistant and DashMachine, which has passed 11 million Docker Hub pulls.",
+  "summary": "Self-taught full-stack engineer with over ten years of experience building and scaling web applications, from system architecture and backend APIs through frontend UI and the infrastructure underneath. A robot is what turned it into a career: when Anki released Vector he wrote VectorCloud, a web interface for it, and has been shipping open source since, including DashMachine, which has passed 11 million Docker Hub pulls. The last few years have gone deep on AI: building against the Anthropic and OpenAI APIs, writing MCP servers and Claude Code extensions, and running local models on his own hardware for private inference. Linux has been his daily driver for over ten years.",
+  "direction": "Open source AI and robotics is the passion, and embedded AI is the goal. He has built assistants that live on hardware in his house rather than in a browser tab, first on a Raspberry Pi and now on a dual-GPU box with on-device speech and a wake word he trained himself. Robots are the future, and open source robots are how we get there. The work he wants is the software around the robot that makes it usable: SDKs, control surfaces, on-device speech and language, the developer experience. He wants to help build the Linux of robotics.",
   "skills": {
     "languages": [
       "Python",
@@ -18,7 +20,9 @@
       "JavaScript",
       "Dart",
       "SQL",
-      "Bash"
+      "Bash",
+      "Swift",
+      "Kotlin"
     ],
     "backend": [
       "FastAPI",
@@ -101,6 +105,18 @@
       "Qdrant",
       "vector search",
       "Ollama"
+    ],
+    "robotics and embedded": [
+      "Raspberry Pi",
+      "Anki Vector SDK",
+      "on-device inference",
+      "ONNX",
+      "Whisper",
+      "Kokoro TTS",
+      "SpeechBrain ECAPA-TDNN",
+      "wake word detection",
+      "speaker identification",
+      "3D printing"
     ],
     "design and marketing": [
       "Graphic design",
@@ -298,7 +314,10 @@
         "SpeechBrain ECAPA-TDNN",
         "ONNX",
         "Linux",
-        "NGINX"
+        "NGINX",
+        "wake word detection",
+        "speaker identification",
+        "on-device inference"
       ],
       "public": false,
       "media": [
@@ -337,7 +356,7 @@
       "name": "Pip",
       "year": 2025,
       "blurb": "The predecessor to Gem. An OpenAI-backed assistant living on a Raspberry Pi with a 3 inch display, in a 3D-printed case mounted on the kitchen wall.",
-      "details": "Pip was the first attempt at the idea Gem now does properly: a household assistant that is a physical object rather than an app. A Raspberry Pi behind a 3 inch display, in a case designed and printed for it, bolted to the kitchen wall with a camera and a shotgun microphone above it. Idle, it showed a pair of eyes with the temperature and time; spoken to, it answered through the OpenAI API.\n\nTwo repositories: a Python backend and a separate frontend for the display. Everything Gem got right about being local and owned came out of what Pip got wrong by depending on somebody else's API.",
+      "details": "Pip was the first attempt at the idea Gem now does properly, and the first attempt at embedded AI: a household assistant that is a physical object rather than an app. A Raspberry Pi behind a 3 inch display, in a case he designed and printed for it, bolted to the kitchen wall with a camera and a shotgun microphone above it. Idle, it showed a pair of eyes with the temperature and time; spoken to, it answered through the OpenAI API.\n\nTwo repositories: a Python backend and a separate frontend for the display, both running in Docker on the Pi. Everything Gem got right about being local and owned came out of what Pip got wrong by depending on somebody else's API.",
       "stack": [
         "Python",
         "OpenAI API",
@@ -402,8 +421,8 @@
       "slug": "vectorcloud",
       "name": "VectorCloud",
       "year": 2018,
-      "blurb": "Web dashboard for the Anki Vector robot, officially adopted by Anki.",
-      "details": "A self-hosted web interface and control surface for the Anki Vector robot, built on Vector's SDK. Anki officially adopted it, which is the part worth noting: an open source side project picked up by the hardware manufacturer whose product it extended. 124 GitHub stars and 19 forks.",
+      "blurb": "His first open source project: a web interface for the Anki Vector robot, built the month Vector shipped and officially adopted by Anki.",
+      "details": "Anki released Vector in the autumn of 2018 and Ross bought one straight away. Within weeks he had written VectorCloud: a self-hosted web interface and control surface for the robot, built in Python and Flask on top of Vector's SDK, so you could drive it, watch what it saw and run behaviours from a browser on the same network. It was the first thing he ever published.\n\nAnki adopted it officially, which is the part worth noting: an open source side project picked up by the hardware manufacturer whose product it extended. It gathered 124 GitHub stars and 19 forks and ran in Docker from the start. Development stopped when Anki shut down in 2019 and took the robot's future with it.\n\nIt set the pattern for everything since. Open source, self-hosted, a piece of hardware in the room made more useful by software around it.",
       "stack": [
         "Python",
         "Flask",
