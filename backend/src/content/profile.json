@@ -505,7 +505,13 @@
         "Docker Compose"
       ],
       "public": true,
-      "repo": "https://github.com/rmountjoy92/VectorCloud"
+      "repo": "https://github.com/rmountjoy92/VectorCloud",
+      "media": [
+        {
+          "src": "/media/vectorcloud/1.png",
+          "caption": "VectorCloud connected to a Vector on the home network. A command bar for the robot, an application store for packages built on the SDK, and the robot's own details reported back: OS 1.3, SDK 0.5.1, the state of the art in 2018."
+        }
+      ]
     },
     {
       "slug": "mss-portfolio",
