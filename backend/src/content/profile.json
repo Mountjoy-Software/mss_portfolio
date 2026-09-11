@@ -330,7 +330,7 @@
       "name": "Savi Assistant",
       "year": 2025,
       "blurb": "Client-facing AI assistant for Savi. Retrieval over the help centre, streamed replies, and tool calling.",
-      "details": "Built for Savi as their main client-facing assistant. Help centre content is chunked out of PDFs, embedded, and indexed in a vector database, so answers are retrieved by meaning rather than keyword match. Replies stream to the browser over Server-Sent Events, and the model can call tools to act rather than only answer. Built on the Laravel AI SDK against the Anthropic API. The retrieval approach is the same cosine-similarity technique behind Gem's memory system, pointed at a different corpus.",
+      "details": "Built for Savi as their main client-facing assistant. Help centre content is chunked out of PDFs, embedded, and indexed in a vector database, so answers are retrieved by meaning rather than keyword match. Replies stream to the browser over Server-Sent Events, and the model can call tools to act rather than only answer. Built on the Laravel AI SDK against the Anthropic API. The retrieval approach is the same cosine-similarity technique behind Gem's memory system, pointed at a different corpus.\n\nThe clip below is the live assistant answering a repayment question: it searches the help centre first, then streams the answer.",
       "stack": [
         "Laravel",
         "PHP",
@@ -347,7 +347,13 @@
         "Docker Compose"
       ],
       "public": true,
-      "url": "https://join.bysavi.com/assistant"
+      "url": "https://join.bysavi.com/assistant",
+      "media": [
+        {
+          "src": "/media/savi-assistant/demo.gif",
+          "caption": "Asking it what RAP is. The assistant searches the help centre before answering, then streams the reply over Server-Sent Events; the search step shows while the tool call runs."
+        }
+      ]
     },
     {
       "slug": "gem",
