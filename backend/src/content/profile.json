@@ -22,7 +22,8 @@
       "SQL",
       "Bash",
       "Swift",
-      "Kotlin"
+      "Kotlin",
+      "TypeScript"
     ],
     "backend": [
       "FastAPI",
@@ -34,13 +35,17 @@
       "Pydantic",
       "MySQL",
       "REST APIs",
-      "Server-Sent Events"
+      "Server-Sent Events",
+      "Redis",
+      "PHPUnit"
     ],
     "frontend": [
       "Flutter",
       "Vue.js",
       "React",
-      "Riverpod"
+      "Riverpod",
+      "Inertia",
+      "Tailwind CSS"
     ],
     "AWS": [
       "Amazon EC2",
@@ -104,7 +109,9 @@
       "embeddings",
       "Qdrant",
       "vector search",
-      "Ollama"
+      "Ollama",
+      "Anthropic Batches API",
+      "LLM-as-judge evaluation"
     ],
     "robotics and embedded": [
       "Raspberry Pi",
@@ -135,6 +142,7 @@
       "end": "present",
       "highlights": [
         "Stayed on as an independent contractor after four years as a full-time employee; Savi is now the main client of Mountjoy Software Solutions.",
+        "Designed and built the Savi AI Gateway solo: a byte-faithful Anthropic proxy with per-product prompt injection, server-side retrieval over Qdrant, full request tracing, an outcome-driven learning loop with offline scoring and human approval, an audited HubSpot proxy and an OAuth 2.1 MCP server. In production within a week of the first commit.",
         "Owns the AWS infrastructure and runs their SAML single sign-on service.",
         "AI engineering, including LLM integration and agent tooling."
       ],
@@ -166,7 +174,16 @@
         "Bitbucket",
         "Bitbucket Pipelines",
         "CI/CD",
-        "Jira"
+        "Jira",
+        "TypeScript",
+        "Inertia",
+        "Tailwind CSS",
+        "Redis",
+        "Qdrant",
+        "Anthropic Claude API",
+        "Model Context Protocol",
+        "OAuth 2.0",
+        "Amazon RDS"
       ]
     },
     {
@@ -257,6 +274,57 @@
     }
   ],
   "projects": [
+    {
+      "slug": "savi-ai-gateway",
+      "name": "Savi AI Gateway",
+      "year": 2026,
+      "blurb": "One gateway every Savi product points its stock Anthropic SDK at: byte-faithful proxy, per-product prompt injection, server-side RAG, full tracing, and a learning loop that turns customer outcomes into human-approved guideline changes. Sole engineer, in production within a week of the first commit.",
+      "details": "Savi had several internal AI products each talking to Anthropic directly: its own key, its own copy of the system prompt, and no shared view of what was being spent or whether the answers were any good. I designed and built a single gateway that every product now points its unmodified Anthropic SDK at. First commit 9 August 2026, v1 in production inside the week, 165 commits and 35 pull requests by mid September, all mine.\n\n**Three surfaces, one Laravel app.** The gateway is a byte-for-byte pass-through of the Anthropic Messages API including SSE streaming; nothing is re-serialised through an SDK, so new betas and content block types pass on day one. Per-key rate limits return Anthropic-shaped errors so client SDK backoff just works, and every request is recorded: model, tokens, duration, stop reason. A React and Inertia console manages apps and keys, prompt profiles, guidelines, the knowledge base, traces, analytics and a playground, with role-based access and mandatory 2FA. An MCP server with OAuth 2.1 and dynamic client registration lets any Savi employee add the company knowledge base to Claude Code or claude.ai with their Google account and nothing else.\n\n**The prompt lives on the key, not in the app.** A request is resolved to a product and surface by its API key and the published system prompt is injected server-side, so apps send a generic completion and never hold prompt text. Non-engineers try the unpublished draft in the playground, then publish globally with one button. Cache breakpoints are budgeted against the caller's own so the injected prefix can never make a request fail.\n\n**Retrieval behind a stock SDK.** PDFs and synced Zendesk help content are chunked and embedded into Qdrant, and search runs as a tool loop inside the gateway: the caller gets one finished answer, and if the model reaches for one of the caller's own tools the loop stops and hands control back. Retrieval policy is set on the app rather than the key, so an internal-only source cannot leak to a customer-facing key by accident.\n\n**A learning layer with a human in the loop.** Products report outcomes after the fact: CSAT, whether a human edited or rejected the draft, what was actually sent. Outcomes mature for five days, weighted by recency and how much a person touched them, and a weekly miner turns the negative tail into proposed guideline changes. Every proposal is scored by replaying past requests offline with the rule applied and having a judge model compare the answers; the score orders the review queue, and approval is the only thing that creates a rule. A second pipeline runs the same idea over roughly 282,000 archived support conversations through the Anthropic Batches API in five idempotent, resumable stages, with older conversations offered a schema that can only produce prose advice so a nine-year-old policy cannot resurface as a rule.\n\n**HubSpot as an audited proxy.** The gateway is the HubSpot base URL for Savi's dashboards. Reads pass, writes are allow-listed per key per object, and a write to a never-before-touched property has to notify RevOps before it clears; a notice that cannot send does not clear the write. The only real HubSpot token lives on the gateway.\n\nRuns on ECS Fargate behind a shared ALB with RDS MySQL, Redis and Secrets Manager, separate staging and production, Bitbucket Pipelines running style checks and the PHPUnit suite on every pull request. No test spends tokens; upstream is stubbed. The MCP tests perform the real initialize handshake, because a test that skips it passes against a server no client can talk to.\n\nThe repository is Savi's and private, so there is no source to show. The two diagrams below are from the design documents behind it.",
+      "stack": [
+        "PHP",
+        "Laravel",
+        "TypeScript",
+        "React",
+        "Inertia",
+        "Tailwind CSS",
+        "MySQL",
+        "Redis",
+        "Qdrant",
+        "Anthropic Claude API",
+        "Anthropic Batches API",
+        "OpenAI API",
+        "Model Context Protocol",
+        "OAuth 2.0",
+        "RAG",
+        "embeddings",
+        "prompt caching",
+        "tool use",
+        "streaming",
+        "Server-Sent Events",
+        "LLM-as-judge evaluation",
+        "Docker",
+        "Docker Compose",
+        "Amazon ECS",
+        "AWS Fargate",
+        "Amazon RDS",
+        "Application Load Balancer",
+        "AWS Secrets Manager",
+        "Bitbucket Pipelines",
+        "CI/CD",
+        "PHPUnit"
+      ],
+      "public": false,
+      "media": [
+        {
+          "src": "/media/savi-ai-gateway/1-today.png",
+          "caption": "What is live. Two Savi products share one core: prompts and guidelines, the knowledge base, the answer composer and a trace of every request, with the learning loop running from reported outcomes to human review."
+        },
+        {
+          "src": "/media/savi-ai-gateway/2-roadmap.png",
+          "caption": "Where it is headed. New products connect the same way with no new plumbing, proposed rule changes are backtested against history before review, and an MCP front door lets internal tools and agents reach the knowledge base directly."
+        }
+      ]
+    },
     {
       "slug": "savi-assistant",
       "name": "Savi Assistant",

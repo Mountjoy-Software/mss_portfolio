@@ -24,6 +24,7 @@ const suggestedPrompts = [
   'What does he want to build next?',
   'Could he work with a team in Europe?',
   'How did a robot get him into coding?',
+  'What has he built most recently?',
 ];
 
 List<String> randomPrompts(int count) {
