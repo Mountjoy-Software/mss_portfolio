@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -93,6 +94,8 @@ class _GraphPanelState extends ConsumerState<GraphPanel>
   String? _dragging;
   String? _error;
   bool _loading = true;
+  bool _fullscreen = false;
+  final _revision = ValueNotifier(0);
 
   @override
   void initState() {
@@ -105,7 +108,67 @@ class _GraphPanelState extends ConsumerState<GraphPanel>
   void dispose() {
     _ticker.dispose();
     _repaint.dispose();
+    _revision.dispose();
     super.dispose();
+  }
+
+  @override
+  void setState(VoidCallback fn) {
+    super.setState(fn);
+    _revision.value++;
+  }
+
+  Future<void> _expandView() async {
+    setState(() => _fullscreen = true);
+    await showGeneralDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.7),
+      barrierDismissible: true,
+      barrierLabel: 'graph',
+      transitionDuration: const Duration(milliseconds: 160),
+      pageBuilder: (_, _, _) => ValueListenableBuilder<int>(
+        valueListenable: _revision,
+        builder: (dialogContext, _, _) => _fullscreenView(dialogContext),
+      ),
+      transitionBuilder: (_, animation, _, child) =>
+          FadeTransition(opacity: animation, child: child),
+    );
+    if (mounted) setState(() => _fullscreen = false);
+  }
+
+  void _openDeck(String path) {
+    if (_fullscreen) Navigator.of(context).pop();
+    context.go(path);
+  }
+
+  Widget _fullscreenView(BuildContext dialogContext) {
+    final colorScheme = Theme.of(dialogContext).colorScheme;
+    void close() => Navigator.of(dialogContext).maybePop();
+    return CallbackShortcuts(
+      bindings: {const SingleActivator(LogicalKeyboardKey.escape): close},
+      child: Focus(
+        autofocus: true,
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: colorScheme.surface,
+                  border: Border.all(
+                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: _panelBody(colorScheme, onClose: close),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _load() async {
@@ -396,61 +459,77 @@ class _GraphPanelState extends ConsumerState<GraphPanel>
         borderRadius: BorderRadius.circular(8),
       ),
       clipBehavior: Clip.antiAlias,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final wide = constraints.maxWidth >= 620;
-          final selected = _selected == null ? null : _bodies[_selected];
-          final inspector = _Inspector(
-            body: selected,
-            path: selected == null ? const [] : _path(selected.node.id),
-            kinds: {for (final b in _bodies.values) b.node.kind},
-            total: _bodies.length,
-            edges: _edges.length,
-            canCollapse:
-                selected != null &&
-                selected.expanded &&
-                _hasChildren(selected.node.id),
-            onExpand: selected == null ? null : () => _expand(selected.node.id),
-            onCollapse: selected == null
-                ? null
-                : () => _collapse(selected.node.id),
-          );
-          return wide
-              ? Row(
-                  children: [
-                    SizedBox(
-                      width: constraints.maxWidth * 0.62,
-                      child: _canvas(),
-                    ),
-                    VerticalDivider(
-                      width: 1,
-                      color: colorScheme.onSurfaceVariant.withValues(
-                        alpha: 0.25,
-                      ),
-                    ),
-                    Expanded(child: inspector),
-                  ],
-                )
-              : Column(
-                  children: [
-                    SizedBox(height: height * 0.55, child: _canvas()),
-                    Divider(
-                      height: 1,
-                      color: colorScheme.onSurfaceVariant.withValues(
-                        alpha: 0.25,
-                      ),
-                    ),
-                    Expanded(child: inspector),
-                  ],
-                );
-        },
-      ),
+      child: _panelBody(colorScheme),
     );
   }
 
-  Widget _canvas() {
+  Widget _panelBody(ColorScheme colorScheme, {VoidCallback? onClose}) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final wide = constraints.maxWidth >= 620;
+        final height = constraints.maxHeight;
+        final selected = _selected == null ? null : _bodies[_selected];
+        final inspector = _Inspector(
+          body: selected,
+          path: selected == null ? const [] : _path(selected.node.id),
+          kinds: {for (final b in _bodies.values) b.node.kind},
+          total: _bodies.length,
+          edges: _edges.length,
+          canCollapse:
+              selected != null &&
+              selected.expanded &&
+              _hasChildren(selected.node.id),
+          onExpand: selected == null ? null : () => _expand(selected.node.id),
+          onCollapse: selected == null
+              ? null
+              : () => _collapse(selected.node.id),
+          onOpenDeck: _openDeck,
+        );
+        final canvas = _canvas(onClose: onClose);
+        return wide
+            ? Row(
+                children: [
+                  SizedBox(
+                    width:
+                        constraints.maxWidth * (onClose == null ? 0.62 : 0.7),
+                    child: canvas,
+                  ),
+                  VerticalDivider(
+                    width: 1,
+                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.25),
+                  ),
+                  Expanded(child: inspector),
+                ],
+              )
+            : Column(
+                children: [
+                  SizedBox(height: height * 0.55, child: canvas),
+                  Divider(
+                    height: 1,
+                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.25),
+                  ),
+                  Expanded(child: inspector),
+                ],
+              );
+      },
+    );
+  }
+
+  Widget _canvas({VoidCallback? onClose}) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+
+    if (_fullscreen && onClose == null) {
+      return Center(
+        child: Text(
+          'open in the expanded view',
+          style: textTheme.bodySmall?.copyWith(
+            fontSize: 12,
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+      );
+    }
 
     if (_error != null) {
       return Center(
@@ -543,7 +622,15 @@ class _GraphPanelState extends ConsumerState<GraphPanel>
                 Positioned(
                   top: 8,
                   right: 8,
-                  child: _ResetButton(onTap: _reset),
+                  child: Row(
+                    children: [
+                      _ResetButton(onTap: _reset),
+                      const SizedBox(width: 8),
+                      onClose == null
+                          ? _ResetButton(onTap: _expandView, label: 'expand')
+                          : _ResetButton(onTap: onClose, label: 'close'),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -802,6 +889,7 @@ class _Inspector extends StatelessWidget {
     required this.canCollapse,
     required this.onExpand,
     required this.onCollapse,
+    required this.onOpenDeck,
   });
 
   final _Body? body;
@@ -812,6 +900,7 @@ class _Inspector extends StatelessWidget {
   final bool canCollapse;
   final VoidCallback? onExpand;
   final VoidCallback? onCollapse;
+  final ValueChanged<String> onOpenDeck;
 
   static const _hidden = {'deck', 'text', 'media'};
 
@@ -905,7 +994,7 @@ class _Inspector extends StatelessWidget {
                 if (node.payload['deck'] != null)
                   _Action(
                     label: 'open the full write-up >',
-                    onTap: () => context.go('${node.payload['deck']}'),
+                    onTap: () => onOpenDeck('${node.payload['deck']}'),
                   ),
                 if (!current.expanded &&
                     node.expands.isNotEmpty &&
