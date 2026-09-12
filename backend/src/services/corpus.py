@@ -130,6 +130,16 @@ def _project_docs(profile: dict) -> list[Doc]:
                 },
             )
         )
+        for index, highlight in enumerate(project.get("highlights") or []):
+            docs.append(
+                Doc(
+                    key=f"highlight:{project['slug']}:{index}",
+                    kind="highlight",
+                    title=highlight,
+                    text=f"{highlight} ({project['name']}, {project.get('year', '')}.)",
+                    payload={"slug": project["slug"], "project": project["name"]},
+                )
+            )
     return docs
 
 

@@ -562,6 +562,11 @@
       "year": 2017,
       "blurb": "A hardware build from 2017: a handheld console with a 3D-printed case and buttons, Adafruit boards soldered together by hand, a Raspberry Pi running RetroPie, and HDMI out to the TV.",
       "details": "Before any of the software, hardware. This is the electronics, soldering and 3D-printing side of the record. In 2017 I built a Game Boy from parts: a Raspberry Pi for the computer, Adafruit's PiTFT display and PiGRRL gamepad board, a PowerBoost charger and a LiPo cell for battery power, a small speaker with an amp, and a case and every button designed and 3D-printed to fit them. Everything is soldered by hand, including the gamepad matrix and the wiring between the boards.\n\nIt runs RetroPie, the Linux distribution for emulation, on the Pi. The case exposes the Pi's ports rather than hiding them, so it takes a full-size HDMI cable, a headphone jack, USB and Ethernet. Plug it into a television and it becomes a console: the handheld's screen goes to the TV and a controller goes into a USB port.\n\nIt was the first thing I built where the software was the easy part. Getting a battery, a charge circuit, a display, a speaker and thirteen buttons to share a case the size of the original meant learning the hardware end to end, and it is the same instinct that later put Pip on the kitchen wall and Gem on an iPad in the kitchen.",
+      "highlights": [
+        "Built a working handheld games console from hardware parts, soldering the Adafruit PiTFT display, PiGRRL gamepad board, PowerBoost charger, LiPo cell and speaker together by hand.",
+        "Designed and 3D-printed the case and every button to fit the boards, in the footprint of the original Game Boy.",
+        "Ran RetroPie, a Linux distribution, on the Raspberry Pi inside it, with HDMI out so the handheld doubles as a television console."
+      ],
       "stack": [
         "Raspberry Pi",
         "Linux",

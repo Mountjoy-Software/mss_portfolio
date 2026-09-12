@@ -46,6 +46,7 @@ class Link:
 
 LINKS = {
     "project": [
+        Link("highlight", "what went into it", 8, match=("slug",)),
         Link("skill", "its stack, closest first", 6, listed=("stack", "title")),
         Link("skill", "nearest other skills", 2),
         Link("role", "nearest role", 1),
@@ -74,7 +75,7 @@ LINKS = {
     "education": [Link("skill", "nearest skills", 4)],
 }
 
-INDEXED = ("kind", "group", "company", "role", "title", "stack")
+INDEXED = ("kind", "group", "company", "role", "title", "stack", "slug")
 
 _ready = False
 _failure: str | None = None
