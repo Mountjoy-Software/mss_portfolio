@@ -51,6 +51,47 @@
   </script>
 </head>
 <body>
+  <script>
+    (function () {
+      var vv = window.visualViewport;
+      if (!vv) return;
+      var wasShort = false;
+      vv.addEventListener('resize', function () {
+        var shortNow = vv.height < window.innerHeight - 100;
+        if (wasShort && !shortNow) {
+          window.scrollTo(0, 0);
+          if (document.activeElement && document.activeElement.blur) {
+            document.activeElement.blur();
+          }
+        }
+        wasShort = shortNow;
+        window.dispatchEvent(new Event('resize'));
+      });
+    })();
+  </script>
+  <script>
+    if (new URLSearchParams(location.search).get('viewport') === '1') {
+      var pill = document.createElement('pre');
+      pill.style.cssText = 'position:fixed;top:4px;left:4px;z-index:2147483647;margin:0;padding:6px 8px;' +
+        'font:11px/1.35 monospace;color:#fff;background:rgba(0,0,0,.75);border-radius:6px;pointer-events:none;';
+      document.body.appendChild(pill);
+      var paint = function () {
+        var vv = window.visualViewport;
+        var view = document.querySelector('flutter-view') || document.querySelector('flt-glass-pane') || document.body;
+        var r = view.getBoundingClientRect();
+        pill.textContent =
+          'innerHeight  ' + window.innerHeight + '\n' +
+          'vv.height    ' + (vv ? Math.round(vv.height) : '-') + '\n' +
+          'vv.offsetTop ' + (vv ? Math.round(vv.offsetTop) : '-') + '\n' +
+          'scrollY      ' + Math.round(window.scrollY) + '\n' +
+          'view h/top   ' + Math.round(r.height) + ' / ' + Math.round(r.top) + '\n' +
+          'active       ' + (document.activeElement ? document.activeElement.tagName.toLowerCase() : '-');
+      };
+      ['resize', 'scroll', 'focusin', 'focusout'].forEach(function (e) { window.addEventListener(e, paint, true); });
+      if (window.visualViewport) { visualViewport.addEventListener('resize', paint); visualViewport.addEventListener('scroll', paint); }
+      setInterval(paint, 500);
+    }
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
