@@ -523,18 +523,20 @@ class _GraphPanelState extends ConsumerState<GraphPanel>
             child: Stack(
               children: [
                 Positioned.fill(
-                  child: CustomPaint(
-                    size: size,
-                    painter: _GraphPainter(
-                      bodies: _bodies,
-                      edges: _edges,
-                      selected: _selected,
-                      hovered: _hovered,
-                      scheme: colorScheme,
-                      tooltipBorder: colorScheme.onSurfaceVariant.withValues(
-                        alpha: 0.45,
+                  child: ClipRect(
+                    child: CustomPaint(
+                      size: size,
+                      painter: _GraphPainter(
+                        bodies: _bodies,
+                        edges: _edges,
+                        selected: _selected,
+                        hovered: _hovered,
+                        scheme: colorScheme,
+                        tooltipBorder: colorScheme.onSurfaceVariant.withValues(
+                          alpha: 0.45,
+                        ),
+                        repaint: _repaint,
                       ),
-                      repaint: _repaint,
                     ),
                   ),
                 ),
@@ -633,6 +635,7 @@ class _GraphPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     canvas.save();
+    canvas.clipRect(Offset.zero & size);
     canvas.translate(size.width / 2, size.height / 2);
 
     final line = Paint()..strokeWidth = 1;
@@ -682,10 +685,12 @@ class _GraphPainter extends CustomPainter {
               ? scheme.onSurface
               : scheme.onSurfaceVariant.withValues(alpha: 0.85),
         );
-        painter.paint(
-          canvas,
-          Offset(body.x - painter.width / 2, body.y + body.radius + 4),
+        final half = size.width / 2;
+        final left = (body.x - painter.width / 2).clamp(
+          -half + 4,
+          half - painter.width - 4,
         );
+        painter.paint(canvas, Offset(left, body.y + body.radius + 4));
       }
     }
 
