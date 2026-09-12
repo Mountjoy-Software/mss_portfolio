@@ -12,7 +12,7 @@ GraphNode _node(String id, String kind, String title, {String? category}) =>
       'kind': kind,
       'title': title,
       'expands': 'its members',
-      if (category != null) 'category': category,
+      'category': ?category,
     });
 
 class _FakeApi extends ApiClient {
