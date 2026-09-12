@@ -123,7 +123,10 @@
       "SpeechBrain ECAPA-TDNN",
       "wake word detection",
       "speaker identification",
-      "3D printing"
+      "3D printing",
+      "soldering",
+      "electronics assembly",
+      "RetroPie"
     ],
     "design and marketing": [
       "Graphic design",
@@ -550,6 +553,58 @@
         {
           "src": "/media/mss-portfolio/architecture.png",
           "caption": "Production architecture. One CloudFront distribution fronts both the S3 bundle and the Fargate API, so the browser is same-origin with the API. The load balancer only admits the CloudFront prefix list."
+        }
+      ]
+    },
+    {
+      "slug": "gameboy",
+      "name": "Pi Game Boy",
+      "year": 2017,
+      "blurb": "A handheld console built from scratch in 2017: 3D-printed case and buttons, Adafruit boards soldered together by hand, a Raspberry Pi running RetroPie, HDMI out to the TV.",
+      "details": "Before any of the software, a piece of hardware. In 2017 I built a Game Boy from parts: a Raspberry Pi for the computer, Adafruit's PiTFT display and PiGRRL gamepad board, a PowerBoost charger and a LiPo cell for battery power, a small speaker with an amp, and a case and every button designed and 3D-printed to fit them. Everything is soldered by hand, including the gamepad matrix and the wiring between the boards.\n\nIt runs RetroPie, the Linux distribution for emulation, on the Pi. The case exposes the Pi's ports rather than hiding them, so it takes a full-size HDMI cable, a headphone jack, USB and Ethernet. Plug it into a television and it becomes a console: the handheld's screen goes to the TV and a controller goes into a USB port.\n\nIt was the first thing I built where the software was the easy part. Getting a battery, a charge circuit, a display, a speaker and thirteen buttons to share a case the size of the original meant learning the hardware end to end, and it is the same instinct that later put Pip on the kitchen wall and Gem on an iPad in the kitchen.",
+      "stack": [
+        "Raspberry Pi",
+        "Linux",
+        "RetroPie",
+        "3D printing",
+        "soldering",
+        "electronics assembly",
+        "Adafruit PiTFT",
+        "Adafruit PiGRRL"
+      ],
+      "public": false,
+      "media": [
+        {
+          "src": "/media/gameboy/1.jpg",
+          "caption": "The finished unit. Every button and the case itself came off the printer."
+        },
+        {
+          "src": "/media/gameboy/2.jpg",
+          "caption": "Pokémon FireRed on the Adafruit PiTFT, with the case lit from inside by the Pi's LEDs."
+        },
+        {
+          "src": "/media/gameboy/3.jpg",
+          "caption": "Plugged into the television over HDMI, with a controller in a USB port. RetroPie's menu on the big screen, the handheld on the table."
+        },
+        {
+          "src": "/media/gameboy/4.jpg",
+          "caption": "The back. The translucent print shows the board's status LEDs through the case."
+        },
+        {
+          "src": "/media/gameboy/5.jpg",
+          "caption": "Side cutouts for the headphone jack and full-size HDMI."
+        },
+        {
+          "src": "/media/gameboy/6.jpg",
+          "caption": "USB and Ethernet exposed at the top rather than sealed in, so it doubles as a console."
+        },
+        {
+          "src": "/media/gameboy/7.jpg",
+          "caption": "The parts before the case: PiTFT display on its ribbon, PiGRRL gamepad board, PowerBoost, LiPo cell, and the speaker."
+        },
+        {
+          "src": "/media/gameboy/8.jpg",
+          "caption": "The Raspberry Pi and the boards laid out on the bench before soldering."
         }
       ]
     }
